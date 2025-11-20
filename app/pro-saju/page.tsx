@@ -181,29 +181,73 @@ export default function ProSajuPage() {
             <form className="space-y-3 text-sm" onSubmit={handleSubmit}>
               <div className="grid grid-cols-2 gap-2">
                 {/* 연, 월, 일, 시, 분, 성별 */}
-                {[{
-                  label: "연도", value: year, setter: setYear
-                }, {
-                  label: "월", value: month, setter: setMonth
-                }, {
-                  label: "일", value: day, setter: setDay
-                }, {
-                  label: "시", value: hour, setter: setHour
-                }, {
-                  label: "분", value: minute, setter: setMinute
-                }].map((item, idx) => (
-                  <div key={idx}>
-                    <label className="block text-[11px] text-slate-400 mb-1">
-                      {item.label}
-                    </label>
-                    <input
-                      type="number"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-md px-2 py-1.5 text-xs"
-                      value={item.value}
-                      onChange={(e) => item.setter(Number(e.target.value))}
-                    />
-                  </div>
-                ))}
+               <div className="grid grid-cols-2 gap-2">
+  <div>
+    <label className="block text-[11px] text-slate-400 mb-1">연도</label>
+    <input
+      type="number"
+      className="w-full bg-slate-900 border border-slate-700 rounded-md px-2 py-1.5 text-xs"
+      value={year}
+      onChange={(e) => setYear(Number(e.target.value))}
+    />
+  </div>
+
+  <div>
+    <label className="block text-[11px] text-slate-400 mb-1">월</label>
+    <input
+      type="number"
+      className="w-full bg-slate-900 border border-slate-700 rounded-md px-2 py-1.5 text-xs"
+      value={month}
+      onChange={(e) => setMonth(Number(e.target.value))}
+    />
+  </div>
+
+  <div>
+    <label className="block text-[11px] text-slate-400 mb-1">일</label>
+    <input
+      type="number"
+      className="w-full bg-slate-900 border border-slate-700 rounded-md px-2 py-1.5 text-xs"
+      value={day}
+      onChange={(e) => setDay(Number(e.target.value))}
+    />
+  </div>
+
+  <div>
+    <label className="block text-[11px] text-slate-400 mb-1">시</label>
+    <input
+      type="number"
+      className="w-full bg-slate-900 border border-slate-700 rounded-md px-2 py-1.5 text-xs"
+      value={hour}
+      onChange={(e) => setHour(Number(e.target.value))}
+    />
+  </div>
+
+  <div>
+    <label className="block text-[11px] text-slate-400 mb-1">분</label>
+    <input
+      type="number"
+      className="w-full bg-slate-900 border border-slate-700 rounded-md px-2 py-1.5 text-xs"
+      value={minute}
+      onChange={(e) => setMinute(Number(e.target.value))}
+    />
+  </div>
+
+  <div>
+    <label className="block text-[11px] text-slate-400 mb-1">성별</label>
+    <select
+      className="w-full bg-slate-900 border border-slate-700 rounded-md px-2 py-1.5 text-xs"
+      value={gender}
+      onChange={(e) => setGender(e.target.value as Gender)}
+    >
+      {genderOptions.map((g) => (
+        <option key={g.value} value={g.value}>
+          {g.label}
+        </option>
+      ))}
+    </select>
+  </div>
+</div>
+
 
                 <div>
                   <label className="block text-[11px] text-slate-400 mb-1">
