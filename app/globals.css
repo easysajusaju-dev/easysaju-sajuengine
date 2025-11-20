@@ -2,7 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 사주 전용 폰트(Optional) */
+/* 기본 바탕 설정 */
+html,
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  @apply bg-slate-900 text-slate-50 font-sans;
+}
+
+/* 스크롤바 살짝 얇게 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.6);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
 }
