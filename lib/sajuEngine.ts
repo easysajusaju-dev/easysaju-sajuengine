@@ -25,6 +25,7 @@ export interface SajuInput {
 export interface SajuResult {
   ganji: any;
   sibsung: any;
+  twelve: any;
   daewoon: any;
 }
 
