@@ -172,45 +172,80 @@ export default function ProSajuPage() {
     setEngineResult(null);
 
     try {
-      // 1) 만세력 디버그 호출
-      const debugUrl = buildDebugUrl();
-      const res = await fetch(debugUrl, { cache: "no-store" });
-      if (!res.ok) {
-        throw new Error(`만세력 서버 오류 (${res.status})`);
-      }
-      const debugJson: ManseryeokDebug = await res.json();
-      setDebugData(debugJson);
+  //
+  // 1) 만세력 디버그 API 호출
+  //
+  const debugUrl = buildDebugUrl();
+  const res = await fetch(debugUrl, { cache: "no-store" });
 
-      // 2) 사주엔진 호출 – 디버그 결과에서 간지 추출해서 너 서버로 보냄
-      const final = debugJson.finalResult;
-      const [yearStem, yearBranch] = final.yearGanji.split("");
-      const [monthStem, monthBranch] = final.monthGanji.split("");
-      const [dayStem, dayBranch] = final.dayGanji.split("");
-      const [hourStem, hourBranch] = final.hourGanji.split("");
+  if (!res.ok) {
+    throw new Error(`만세력 서버 오류 (${res.status})`);
+  }
 
-      const birthIso = debugJson.timeCalc.birthAdjusted
-        ? `${debugJson.timeCalc.birthAdjusted}:00+09:00`
-        : `${debugJson.timeCalc.originalBirth}:00+09:00`;
+  const debugJson: ManseryeokDebug = await res.json();
+  setDebugData(debugJson);
 
-      const enginePayload = {
-        yearStem,
-        yearBranch,
-        monthStem,
-        monthBranch,
-        dayStem,
-        dayBranch,
-        hourStem,
-        hourBranch,
-        gender,
-        birth: birthIso,
-        solarTerms: [
-          {
-            name: final.termName,
-            date: `${debugJson.seasonCalc.rawTermDate}:00+09:00`,
-            isPrincipal: true,
-          },
-        ],
-      };
+  //
+  // 2) 사주엔진 호출 – 디버그 결과에서 간지 추출해서 my-manseryeok 서버로 전송
+  //
+  const final = debugJson.finalResult;
+
+  const [yearStem, yearBranch] = final.yearGanji.split("");
+  const [monthStem, monthBranch] = final.monthGanji.split("");
+  const [dayStem, dayBranch] = final.dayGanji.split("");
+  const [hourStem, hourBranch] = final.hourGanji.split("");
+
+  // ISO8601 태그 붙은 생시 생성
+  const birthIso = debugJson.timeCalc.birthAdjusted
+    ? `${debugJson.timeCalc.birthAdjusted}:00+09:00`
+    : `${debugJson.timeCalc.originalBirth}:00+09:00`;
+
+  // 만세력에서 계산된 절입정보 넣기
+  const solarTermName = debugJson.seasonCalc.rawTermName || final.termName;
+  const solarTermDate = `${debugJson.seasonCalc.rawTermDate}:00+09:00`;
+
+  // 사주엔진 엔드포인트로 보낼 payload
+  const enginePayload = {
+    yearStem,
+    yearBranch,
+    monthStem,
+    monthBranch,
+    dayStem,
+    dayBranch,
+    hourStem,
+    hourBranch,
+    gender,
+    birth: birthIso,
+    solarTerms: [
+      {
+        name: solarTermName,
+        date: solarTermDate,
+        isPrincipal: true,
+      },
+    ],
+  };
+
+  //
+  // 3) 사주엔진(API) 호출
+  //
+  const engineRes = await fetch("https://my-manseryeok.onrender.com/saju/main", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(enginePayload),
+  });
+
+  if (!engineRes.ok) {
+    throw new Error(`사주엔진 오류 (${engineRes.status})`);
+  }
+
+  const engineJson = await engineRes.json();
+  setEngineData(engineJson);
+
+} catch (err: any) {
+  console.error(err);
+  alert("⚠️ 데이터 처리 중 오류가 발생했습니다.\n" + err.message);
+}
+
 
       const engineRes = await fetch("/api/saju", {
         method: "POST",
