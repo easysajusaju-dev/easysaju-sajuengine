@@ -234,12 +234,13 @@ export function calculateSaju(input: SajuInput): SajuResult {
     hour:  getSibsung(input.dayStem, input.hourBranch, true),
   };
 
-  const twelve = {
-    year:  getTwelve(input.yearStem,  input.yearBranch),
-    month: getTwelve(input.monthStem, input.monthBranch),
-    day:   getTwelve(input.dayStem,   input.dayBranch),
-    hour:  getTwelve(input.hourStem,  input.hourBranch),
-  };
+const twelve = {
+  year:  getTwelveUnseong(input.dayStem,  input.yearBranch),
+  month: getTwelveUnseong(input.dayStem,  input.monthBranch),
+  day:   getTwelveUnseong(input.dayStem,  input.dayBranch),
+  hour:  getTwelveUnseong(input.dayStem,  input.hourBranch),
+};
+
 
   const daewoon = calcDaewoon(
     input.birth,
