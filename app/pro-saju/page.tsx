@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 
 type Gender = "M" | "F";
 
@@ -114,7 +113,6 @@ function buildDebugUrl({
     tzAdjust: "-30",
     seasonAdjust: "0",
   });
-  // 필요하면 my-manseryeok / saju-proxy 둘 중 하나로 바꿔 써도 됨
   return `https://my-manseryeok.onrender.com/saju/debug?${qs.toString()}`;
 }
 
@@ -134,7 +132,8 @@ export default function ProSajuPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [engineResult, setEngineResult] = useState<EngineResponse["result"] | null>(null);
+  const [engineResult, setEngineResult] =
+    useState<EngineResponse["result"] | null>(null);
   const [debugData, setDebugData] = useState<ManseryeokDebug | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -231,21 +230,20 @@ export default function ProSajuPage() {
       <main className="flex-1 flex flex-col lg:flex-row gap-4 px-4 py-4 lg:px-6 lg:py-6 max-w-6xl w-full mx-auto">
         {/* 왼쪽: 입력 패널 */}
         <section className="lg:w-72 w-full">
-          <motion.div
-            className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 shadow-xl shadow-slate-950/40 backdrop-blur"
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-          >
+          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 shadow-xl shadow-slate-950/40 backdrop-blur">
             <h2 className="text-sm font-semibold mb-3 flex items-center justify-between">
               사주 입력
               <span className="text-[10px] text-slate-500">
                 양력 기준 · pivot 30분
               </span>
             </h2>
+
             <form className="space-y-3 text-sm" onSubmit={handleSubmit}>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">연도</label>
+                  <label className="block text-[11px] text-slate-400 mb-1">
+                    연도
+                  </label>
                   <input
                     type="number"
                     className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-cyan-400"
@@ -254,7 +252,9 @@ export default function ProSajuPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">월</label>
+                  <label className="block text-[11px] text-slate-400 mb-1">
+                    월
+                  </label>
                   <input
                     type="number"
                     className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-cyan-400"
@@ -265,7 +265,9 @@ export default function ProSajuPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">일</label>
+                  <label className="block text-[11px] text-slate-400 mb-1">
+                    일
+                  </label>
                   <input
                     type="number"
                     className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-cyan-400"
@@ -276,7 +278,9 @@ export default function ProSajuPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">시</label>
+                  <label className="block text-[11px] text-slate-400 mb-1">
+                    시
+                  </label>
                   <input
                     type="number"
                     className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-cyan-400"
@@ -287,7 +291,9 @@ export default function ProSajuPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">분</label>
+                  <label className="block text-[11px] text-slate-400 mb-1">
+                    분
+                  </label>
                   <input
                     type="number"
                     className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-cyan-400"
@@ -298,7 +304,9 @@ export default function ProSajuPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">성별</label>
+                  <label className="block text-[11px] text-slate-400 mb-1">
+                    성별
+                  </label>
                   <select
                     className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-cyan-400"
                     value={gender}
@@ -337,88 +345,75 @@ export default function ProSajuPage() {
                 </div>
               )}
             </form>
-          </motion.div>
+          </div>
         </section>
 
         {/* 오른쪽: 결과 패널 */}
         <section className="flex-1 flex flex-col gap-4">
           {/* 1) 사주 팔자 & 십성/12운성 */}
-          <AnimatePresence>
-            {showResult && engineResult && (
-              <motion.div
-                key="main-cards"
-                initial={{ y: 15, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 15, opacity: 0 }}
-                className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 shadow-xl shadow-slate-950/40 backdrop-blur"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold">사주 팔자 · 전문가 뷰</h2>
-                  <div className="text-[11px] text-slate-500">
-                    대운 시작 {engineResult.daewoon.startAge}세 ·{" "}
-                    {engineResult.daewoon.direction === "forward" ? "순행" : "역행"}
-                  </div>
+          {showResult && engineResult && (
+            <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 shadow-xl shadow-slate-950/40 backdrop-blur">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold">사주 팔자 · 전문가 뷰</h2>
+                <div className="text-[11px] text-slate-500">
+                  대운 시작 {engineResult.daewoon.startAge}세 ·{" "}
+                  {engineResult.daewoon.direction === "forward" ? "순행" : "역행"}
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {(["year", "month", "day", "hour"] as const).map((col) => {
-                    const labelMap: Record<string, string> = {
-                      year: "년주",
-                      month: "월주",
-                      day: "일주",
-                      hour: "시주",
-                    };
-                    const ganji = engineResult.ganji[col];
-                    const sib = engineResult.sibsung[col === "day" ? "day" : col];
-                    const bsib = engineResult.branchSibsung?.[col];
-                    const tw = engineResult.twelve[col];
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {(["year", "month", "day", "hour"] as const).map((col) => {
+                  const labelMap: Record<string, string> = {
+                    year: "년주",
+                    month: "월주",
+                    day: "일주",
+                    hour: "시주",
+                  };
+                  const ganji = engineResult.ganji[col];
+                  const sib = engineResult.sibsung[col === "day" ? "day" : col];
+                  const bsib = engineResult.branchSibsung?.[col];
+                  const tw = engineResult.twelve[col];
 
-                    const stem = ganji?.[0] ?? "";
-                    const branch = ganji?.[1] ?? "";
+                  const stem = ganji?.[0] ?? "";
+                  const branch = ganji?.[1] ?? "";
 
-                    return (
-                      <motion.div
-                        key={col}
-                        className="relative overflow-hidden rounded-2xl bg-slate-950/80 border border-slate-800 px-3 py-3 flex flex-col gap-1"
-                        whileHover={{ y: -2, boxShadow: "0 18px 45px rgba(15,23,42,0.85)" }}
-                      >
-                        <div className="flex items-center justify-between text-[11px] text-slate-400">
-                          <span>{labelMap[col]}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-slate-700">
-                            {tw || "12운성"}
+                  return (
+                    <div
+                      key={col}
+                      className="relative overflow-hidden rounded-2xl bg-slate-950/80 border border-slate-800 px-3 py-3 flex flex-col gap-1"
+                    >
+                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        <span>{labelMap[col]}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-slate-700">
+                          {tw || "12운성"}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-1 mt-1">
+                        <div className="text-3xl font-semibold tracking-tight">
+                          <span className="text-cyan-300">{stem}</span>
+                          <span className="ml-1 text-emerald-300">{branch}</span>
+                        </div>
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-1 text-[11px]">
+                        <span className="px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                          십성: {sib}
+                        </span>
+                        {bsib && (
+                          <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                            지지십성: {bsib}
                           </span>
-                        </div>
-                        <div className="flex items-baseline gap-1 mt-1">
-                          <div className="text-3xl font-semibold tracking-tight">
-                            <span className="text-cyan-300">{stem}</span>
-                            <span className="ml-1 text-emerald-300">{branch}</span>
-                          </div>
-                        </div>
-                        <div className="mt-1 flex flex-wrap gap-1 text-[11px]">
-                          <span className="px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
-                            십성: {sib}
-                          </span>
-                          {bsib && (
-                            <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
-                              지지십성: {bsib}
-                            </span>
-                          )}
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-          {/* 2) 대운 타임라인 (my-manseryeok 원본 기반) */}
+          {/* 2) 대운 타임라인 */}
           {debugData && (
-            <motion.div
-              initial={{ y: 15, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 shadow-xl shadow-slate-950/40 backdrop-blur"
-            >
+            <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 shadow-xl shadow-slate-950/40 backdrop-blur">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-semibold">대운 타임라인</h2>
                 <div className="text-[11px] text-slate-500">
@@ -433,10 +428,9 @@ export default function ProSajuPage() {
                   {debugData.finalResult.daeWoonYear.map((y, idx) => {
                     const ganji = debugData.finalResult.daeWoonGanji[idx];
                     return (
-                      <motion.div
+                      <div
                         key={y}
                         className="min-w-[90px] rounded-xl border border-slate-800 bg-slate-950/80 px-3 py-2 text-[11px]"
-                        whileHover={{ y: -3, scale: 1.02 }}
                       >
                         <div className="text-slate-400 mb-0.5">{y}년</div>
                         <div className="text-sm font-semibold text-emerald-300">
@@ -445,21 +439,17 @@ export default function ProSajuPage() {
                         <div className="mt-1 text-[10px] text-slate-500">
                           {10 * (idx + 1)}대운
                         </div>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* 3) 형·충·파·합 뷰어 */}
           {engineResult?.relations && (
-            <motion.div
-              initial={{ y: 15, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 shadow-xl shadow-slate-950/40 backdrop-blur"
-            >
+            <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 shadow-xl shadow-slate-950/40 backdrop-blur">
               <h2 className="text-sm font-semibold mb-2">형 · 충 · 파 · 합</h2>
               <div className="grid md:grid-cols-4 gap-3 text-[11px]">
                 {([
@@ -493,7 +483,7 @@ export default function ProSajuPage() {
                   );
                 })}
               </div>
-            </motion.div>
+            </div>
           )}
         </section>
       </main>
