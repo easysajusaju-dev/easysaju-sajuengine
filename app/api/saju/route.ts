@@ -1,8 +1,20 @@
+import { calculateSaju } from "../../../../lib/sajuEngine";
+
 export async function POST(req: Request) {
-  const body = await req.json();
-  return Response.json({
-    ok: true,
-    received: body,
-    message: "Saju engine API OK"
-  });
+  try {
+    const body = await req.json();
+
+    const result = calculateSaju(body);
+
+    return Response.json({
+      ok: true,
+      result
+    });
+
+  } catch (err) {
+    return Response.json({
+      ok: false,
+      error: String(err)
+    });
+  }
 }
