@@ -11,18 +11,12 @@ interface EngineResult {
     day: string;
     hour: string;
   };
-  sibsung: Record<string, string>;
-  branchSibsung: Record<string, string>;
-  twelve: Record<string, string>;
+  sibsung: any;
+  branchSibsung: any;
+  twelve: any;
   daewoon: {
     direction: "forward" | "reverse";
     startAge: number;
-  };
-  relations?: {
-    hyung: any[];
-    chung: any[];
-    pa: any[];
-    hap: any[];
   };
 }
 
@@ -37,13 +31,15 @@ interface ManseryeokFinal {
   monthGanji: string;
   dayGanji: string;
   hourGanji: string;
+  yearGod: string;
+  monthGod: string;
+  dayGod: string;
+  hourGod: string;
   daeNum: number;
   daeDir: string;
   daeWoon: string[];
   daeWoonGanji: string[];
   daeWoonYear: number[];
-  seunYear: number[];
-  seunGanji: string[];
   solarText: string;
   lunarText: string;
   termName: string;
@@ -51,8 +47,14 @@ interface ManseryeokFinal {
 }
 
 interface ManseryeokDebug {
-  input: any;
-  dbInfo: any;
+  input: {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+    minute: number;
+    isMale: boolean;
+  };
   timeCalc: {
     originalBirth: string;
     birthAdjusted: string;
@@ -67,15 +69,15 @@ interface ManseryeokDebug {
   finalResult: ManseryeokFinal;
 }
 
-const genderOptions: { value: Gender; label: string }[] = [
-  { value: "M", label: "남자" },
-  { value: "F", label: "여자" },
-];
-
-// ─────────────────────────────
-// 만세력 디버그 URL 만들기
-// ─────────────────────────────
-function buildDebugUrl(params: {
+// my-manseryeok 디버그 URL 구성
+function buildDebugUrl({
+  year,
+  month,
+  day,
+  hour,
+  minute,
+  gender,
+}: {
   year: number;
   month: number;
   day: number;
@@ -83,8 +85,6 @@ function buildDebugUrl(params: {
   minute: number;
   gender: Gender;
 }) {
-  const { year, month, day, hour, minute, gender } = params;
-
   const qs = new URLSearchParams({
     year: String(year),
     month: String(month),
@@ -102,124 +102,68 @@ function buildDebugUrl(params: {
   return `https://my-manseryeok.onrender.com/saju/debug?${qs.toString()}`;
 }
 
-// ─────────────────────────────
-// 오행 컬러 매핑 (브랜드톤: 민트/스카이 계열)
-// ─────────────────────────────
-type ElementType = "목" | "화" | "토" | "금" | "수" | "기타";
+const genderOptions: { value: Gender; label: string }[] = [
+  { value: "M", label: "남자" },
+  { value: "F", label: "여자" },
+];
 
-function getElementFromStemOrBranch(ch: string): ElementType {
-  const woodStems = "甲乙";
-  const fireStems = "丙丁";
-  const earthStems = "戊己";
-  const metalStems = "庚辛";
-  const waterStems = "壬癸";
-
-  const woodBranches = "寅卯";
-  const fireBranches = "巳午";
-  const earthBranches = "丑辰未戌";
-  const metalBranches = "申酉";
-  const waterBranches = "子亥";
-
-  if (woodStems.includes(ch) || woodBranches.includes(ch)) return "목";
-  if (fireStems.includes(ch) || fireBranches.includes(ch)) return "화";
-  if (earthStems.includes(ch) || earthBranches.includes(ch)) return "토";
-  if (metalStems.includes(ch) || metalBranches.includes(ch)) return "금";
-  if (waterStems.includes(ch) || waterBranches.includes(ch)) return "수";
-  return "기타";
-}
-
-function getElementClasses(element: ElementType) {
-  switch (element) {
-    case "목":
-      // 민트(브랜드 핵심색)
-      return {
-        bg: "bg-emerald-100",
-        text: "text-emerald-800",
-        border: "border-emerald-300",
-      };
-    case "화":
-      return {
-        bg: "bg-rose-100",
-        text: "text-rose-800",
-        border: "border-rose-300",
-      };
-    case "토":
-      return {
-        bg: "bg-amber-100",
-        text: "text-amber-900",
-        border: "border-amber-300",
-      };
-    case "금":
-      return {
-        bg: "bg-slate-100",
-        text: "text-slate-800",
-        border: "border-slate-300",
-      };
-    case "수":
-      return {
-        bg: "bg-sky-100",
-        text: "text-sky-800",
-        border: "border-sky-300",
-      };
-    default:
-      return {
-        bg: "bg-slate-100",
-        text: "text-slate-800",
-        border: "border-slate-300",
-      };
-  }
-}
-
-// ─────────────────────────────
-// 메인 페이지 컴포넌트
-// ─────────────────────────────
 export default function ProSajuPage() {
-  // 기본값은 네가 테스트했던 1978-03-24 12:30 / 여자
   const [name, setName] = useState("테스트");
-  const [year, setYear] = useState(1978);
-  const [month, setMonth] = useState(3);
-  const [day, setDay] = useState(24);
-  const [hour, setHour] = useState(12);
-  const [minute, setMinute] = useState(30);
   const [gender, setGender] = useState<Gender>("F");
+  const [birthYmd, setBirthYmd] = useState("19780324"); // YYYYMMDD
+  const [birthTime, setBirthTime] = useState("1230"); // HHmm
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [engineResult, setEngineResult] = useState<EngineResult | null>(null);
   const [debugData, setDebugData] = useState<ManseryeokDebug | null>(null);
+  const [engineResult, setEngineResult] = useState<EngineResult | null>(null);
 
-  // ─────────────────────────────
-  // 분석 실행
-  // ─────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    // 입력 검증
+    const ymd = birthYmd.trim();
+    const hm = birthTime.trim();
+
+    if (!/^\d{8}$/.test(ymd)) {
+      setError("생년월일을 8자리 숫자로 입력해주세요. (예: 19780324)");
+      return;
+    }
+    if (!/^\d{4}$/.test(hm)) {
+      setError("출생시간을 4자리 숫자로 입력해주세요. (예: 1230)");
+      return;
+    }
+
+    const year = Number(ymd.slice(0, 4));
+    const month = Number(ymd.slice(4, 6));
+    const day = Number(ymd.slice(6, 8));
+    const hour = Number(hm.slice(0, 2));
+    const minute = Number(hm.slice(2, 4));
+
+    if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59) {
+      setError("유효한 날짜/시간을 입력해주세요.");
+      return;
+    }
+
+    setLoading(true);
+    setDebugData(null);
     setEngineResult(null);
 
     try {
       // 1) 만세력 디버그 호출
-      const debugUrl = buildDebugUrl({
-        year,
-        month,
-        day,
-        hour,
-        minute,
-        gender,
-      });
-
+      const debugUrl = buildDebugUrl({ year, month, day, hour, minute, gender });
       const debugRes = await fetch(debugUrl, { cache: "no-store" });
       if (!debugRes.ok) {
         throw new Error(`만세력 서버 오류 (${debugRes.status})`);
       }
-
       const debugJson = (await debugRes.json()) as ManseryeokDebug;
       setDebugData(debugJson);
 
       const final = debugJson.finalResult;
 
-      // 간지 분리
+      // 2) 우리 사주엔진 호출 (대운수는 여기 startAge 사용!)
       const [yearStem, yearBranch] = final.yearGanji.split("");
       const [monthStem, monthBranch] = final.monthGanji.split("");
       const [dayStem, dayBranch] = final.dayGanji.split("");
@@ -242,14 +186,13 @@ export default function ProSajuPage() {
         birth: birthIso,
         solarTerms: [
           {
-            name: final.termName || debugJson.seasonCalc.rawTermName,
-            date: `${debugJson.seasonCalc.rawTermDate}:00+09:00`,
+            name: final.termName,
+            date: `${debugJson.seasonCalc.rawTermDate || final.termDate}:00+09:00`,
             isPrincipal: true,
           },
         ],
       };
 
-      // 2) 사주 엔진 호출
       const engineRes = await fetch("/api/saju", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -270,385 +213,224 @@ export default function ProSajuPage() {
     }
   }
 
-  const hasMainResult = !!engineResult && !!debugData;
-
-  // 간단한 한글 라벨 맵
-  const ganjiLabelMap: Record<"year" | "month" | "day" | "hour", string> = {
-    year: "년주",
-    month: "월주",
-    day: "일주",
-    hour: "시주",
-  };
-
-  // 실제 브라우저에서 확인할 주소 예시:
-  // https://easysaju-sajuengine.vercel.app/pro-saju
+  const final = debugData?.finalResult;
+  const daeStartAge = engineResult?.daewoon.startAge; // 우리 로직 대운수
+  const daeDirection = engineResult?.daewoon.direction === "reverse" ? "역행" : "순행";
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
-      {/* 상단 헤더 (브랜드 바) */}
-      <header className="bg-gradient-to-r from-sky-200 via-emerald-200 to-white border-b border-sky-100">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-sky-500 text-white flex items-center justify-center text-xs font-bold shadow-sm">
-              理知
-            </div>
-            <div className="leading-tight">
-              <div className="text-sm font-semibold text-slate-900">
-                이지사주 전문 만세력
-              </div>
-              <div className="text-[11px] text-slate-600">
-                my-manseryeok · 사주엔진 디버그 전용 화면
-              </div>
-            </div>
-          </div>
-          <div className="hidden sm:block text-[11px] text-slate-500">
-            v0.1 · 내부 테스트용
+    <div className="min-h-screen bg-slate-100 flex justify-center px-3 py-6">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+        {/* 상단 파란 헤더 – 타사 앱 느낌 */}
+        <div className="bg-indigo-600 text-white px-4 py-3">
+          <div className="text-lg font-semibold">이지사주 전문 만세력</div>
+          <div className="mt-1 text-xs text-indigo-100">
+            (테스트용) my-manseryeok + 이지사주 사주엔진
           </div>
         </div>
-      </header>
 
-      {/* 메인 */}
-      <main className="flex-1">
-        <div className="max-w-5xl mx-auto px-4 py-4 md:py-6 flex flex-col md:flex-row gap-4 md:gap-6">
-          {/* 입력 패널 */}
-          <section className="w-full md:w-72 shrink-0">
-            <div className="bg-white border border-sky-100 rounded-2xl shadow-sm p-4">
-              <h2 className="text-sm font-semibold mb-3 flex items-center justify-between">
-                기본 입력
-                <span className="text-[11px] text-slate-400">
-                  양력 · pivot -30분
-                </span>
-              </h2>
+        {/* 메인 컨텐츠 */}
+        <div className="px-4 py-4 space-y-4 text-sm">
+          {/* 입력 폼 */}
+          <section>
+            <h2 className="text-base font-semibold mb-3">
+              기본 입력양식 · <span className="text-blue-600">pivot -30분</span>
+            </h2>
 
-              <form className="space-y-3 text-sm" onSubmit={handleSubmit}>
-                {/* 이름 */}
-                <div>
-                  <label className="block text-[11px] text-slate-500 mb-1">
-                    이름
-                  </label>
+            <form className="space-y-3" onSubmit={handleSubmit}>
+              {/* 성별 */}
+              <div className="flex items-center gap-4">
+                <div className="font-medium w-16">성별</div>
+                <div className="flex gap-4">
+                  {genderOptions.map((g) => (
+                    <label key={g.value} className="flex items-center gap-1">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value={g.value}
+                        checked={gender === g.value}
+                        onChange={() => setGender(g.value)}
+                      />
+                      <span>{g.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* 이름 */}
+              <div className="flex items-center gap-4">
+                <div className="font-medium w-16">이름</div>
+                <input
+                  type="text"
+                  className="flex-1 border border-slate-300 rounded px-2 py-1 text-sm"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  maxLength={20}
+                  placeholder="입력하세요(최대 20자)"
+                />
+              </div>
+
+              {/* 생년월일 */}
+              <div className="flex items-center gap-4">
+                <div className="font-medium w-16">생년월일</div>
+                <div className="flex-1 flex flex-col gap-1">
                   <input
                     type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full rounded-md border border-slate-200 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400 bg-slate-50"
-                    placeholder="이름(선택)"
+                    className="border border-slate-300 rounded px-2 py-1 text-sm"
+                    value={birthYmd}
+                    onChange={(e) => setBirthYmd(e.target.value)}
+                    placeholder="예: 19780324"
                   />
-                </div>
-
-                {/* 날짜/시간 */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[11px] text-slate-500 mb-1">
-                      연도
+                  <div className="flex gap-3 text-xs text-slate-600">
+                    <label className="flex items-center gap-1">
+                      <input type="checkbox" disabled /> <span>음력</span>
                     </label>
-                    <input
-                      type="number"
-                      value={year}
-                      onChange={(e) => setYear(Number(e.target.value))}
-                      className="w-full rounded-md border border-slate-200 px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-slate-500 mb-1">
-                      월
+                    <label className="flex items-center gap-1">
+                      <input type="checkbox" disabled /> <span>윤달</span>
                     </label>
-                    <input
-                      type="number"
-                      value={month}
-                      onChange={(e) => setMonth(Number(e.target.value))}
-                      min={1}
-                      max={12}
-                      className="w-full rounded-md border border-slate-200 px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-slate-500 mb-1">
-                      일
-                    </label>
-                    <input
-                      type="number"
-                      value={day}
-                      onChange={(e) => setDay(Number(e.target.value))}
-                      min={1}
-                      max={31}
-                      className="w-full rounded-md border border-slate-200 px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-slate-500 mb-1">
-                      시
-                    </label>
-                    <input
-                      type="number"
-                      value={hour}
-                      onChange={(e) => setHour(Number(e.target.value))}
-                      min={0}
-                      max={23}
-                      className="w-full rounded-md border border-slate-200 px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-slate-500 mb-1">
-                      분
-                    </label>
-                    <input
-                      type="number"
-                      value={minute}
-                      onChange={(e) => setMinute(Number(e.target.value))}
-                      min={0}
-                      max={59}
-                      className="w-full rounded-md border border-slate-200 px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-slate-500 mb-1">
-                      성별
-                    </label>
-                    <select
-                      value={gender}
-                      onChange={(e) => setGender(e.target.value as Gender)}
-                      className="w-full rounded-md border border-slate-200 px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400"
-                    >
-                      {genderOptions.map((g) => (
-                        <option key={g.value} value={g.value}>
-                          {g.label}
-                        </option>
-                      ))}
-                    </select>
                   </div>
                 </div>
+              </div>
 
-                {/* 버튼 */}
+              {/* 출생시간 */}
+              <div className="flex items-center gap-4">
+                <div className="font-medium w-16">출생시간</div>
+                <div className="flex-1 flex flex-col gap-1">
+                  <input
+                    type="text"
+                    className="border border-slate-300 rounded px-2 py-1 text-sm"
+                    value={birthTime}
+                    onChange={(e) => setBirthTime(e.target.value)}
+                    placeholder="예: 1230"
+                  />
+                  <div className="flex gap-3 text-xs text-slate-600">
+                    <label className="flex items-center gap-1">
+                      <input type="checkbox" disabled /> <span>모름</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* 버튼 + 에러 */}
+              <div className="pt-1">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-2 rounded-full bg-sky-500 text-white text-xs font-semibold py-2 shadow-sm hover:bg-sky-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-slate-400 text-white font-semibold rounded-md py-2 text-sm"
                 >
                   {loading ? "분석 중..." : "사주 분석 실행"}
                 </button>
+              </div>
 
-                {error && (
-                  <div className="text-[11px] text-rose-600 bg-rose-50 border border-rose-200 rounded-md px-2 py-1 mt-1">
-                    {error}
-                  </div>
-                )}
-
-                {debugData && (
-                  <div className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-500 space-y-0.5">
-                    <div>{debugData.finalResult.solarText}</div>
-                    <div>{debugData.finalResult.lunarText}</div>
-                    <div>
-                      절기: {debugData.finalResult.termName}{" "}
-                      ({debugData.finalResult.termDate})
-                    </div>
-                    <div>대운수: {debugData.finalResult.daeNum}</div>
-                  </div>
-                )}
-              </form>
-            </div>
+              {error && (
+                <div className="text-xs text-red-500 bg-red-50 border border-red-200 rounded px-2 py-1">
+                  {error}
+                </div>
+              )}
+            </form>
           </section>
 
-          {/* 결과 패널 */}
-          <section className="flex-1 flex flex-col gap-4">
-            {/* 프로필 & 요약 */}
-            {hasMainResult && debugData && (
-              <div className="bg-white border border-sky-100 rounded-2xl shadow-sm p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-sky-400 to-emerald-400 text-white flex items-center justify-center text-sm font-semibold">
-                      {name ? name[0] : "명"}
+          {/* 결과 섹션들 – 실제 호출 후에만 보이게 */}
+          {final && (
+            <>
+              {/* 요약 */}
+              <section className="border-t border-slate-200 pt-3">
+                <h3 className="text-sm font-semibold mb-2">기본 정보</h3>
+                <div className="text-xs text-slate-700 space-y-1">
+                  <div>
+                    <span className="font-medium">양력:</span> {final.solarText}
+                  </div>
+                  <div>
+                    <span className="font-medium">음력:</span> {final.lunarText}
+                  </div>
+                  <div>
+                    <span className="font-medium">절기:</span> {final.termName} (
+                    {final.termDate})
+                  </div>
+                </div>
+              </section>
+
+              {/* 사주 팔자 – 타사 레이아웃 비슷하게 */}
+              <section className="border-t border-slate-200 pt-3">
+                <h3 className="text-base font-semibold mb-3">사주 팔자</h3>
+
+                <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                  {[
+                    {
+                      key: "hour",
+                      label: "시주",
+                      ganji: final.hourGanji,
+                      god: final.hourGod,
+                    },
+                    {
+                      key: "day",
+                      label: "일주(나)",
+                      ganji: final.dayGanji,
+                      god: final.dayGod,
+                    },
+                    {
+                      key: "month",
+                      label: "월주",
+                      ganji: final.monthGanji,
+                      god: final.monthGod,
+                    },
+                    {
+                      key: "year",
+                      label: "년주",
+                      ganji: final.yearGanji,
+                      god: final.yearGod,
+                    },
+                  ].map((col) => (
+                    <div
+                      key={col.key}
+                      className="flex flex-col items-center gap-1 bg-slate-50 border border-slate-200 rounded-md py-2"
+                    >
+                      <div className="text-[11px] text-slate-600">{col.label}</div>
+                      <div className="w-12 h-16 bg-slate-900 text-white flex items-center justify-center text-3xl font-bold rounded">
+                        {col.ganji}
+                      </div>
+                      <div className="text-[11px] text-blue-700">{col.god}</div>
                     </div>
-                    <div className="text-sm">
-                      <div className="font-semibold">
-                        {name || "미입력"}{" "}
-                        <span className="text-[11px] text-slate-500">
-                          ({gender === "M" ? "남" : "여"})
+                  ))}
+                </div>
+              </section>
+
+              {/* 대운 – 대운수는 우리 엔진 startAge 사용 */}
+              {final.daeWoonYear && engineResult && (
+                <section className="border-t border-slate-200 pt-3 pb-2">
+                  <h3 className="text-base font-semibold mb-2">
+                    전통나이
+                    {daeStartAge !== undefined && (
+                      <>
+                        {" "}
+                        <span className="text-sm font-normal text-slate-600">
+                          (대운수: {daeStartAge}, {daeDirection})
                         </span>
-                      </div>
-                      <div className="text-[11px] text-slate-500">
-                        {year}년 {month}월 {day}일 {hour}시 {minute}분 (양력, -30분
-                        보정)
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-[11px] text-slate-500">
-                    대운 시작: {engineResult?.daewoon.startAge}세 ·{" "}
-                    {engineResult?.daewoon.direction === "forward"
-                      ? "순행"
-                      : "역행"}
-                  </div>
-                </div>
-              </div>
-            )}
+                      </>
+                    )}
+                  </h3>
 
-            {/* 사주 팔자 */}
-            {engineResult && debugData && (
-              <div className="bg-white border border-sky-100 rounded-2xl shadow-sm p-4">
-                <h2 className="text-sm font-semibold mb-3">사주 팔자</h2>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {(["year", "month", "day", "hour"] as const).map((key) => {
-                    const ganji = engineResult.ganji[key] || "";
-                    const stem = ganji[0] || "";
-                    const branch = ganji[1] || "";
-
-                    const element = getElementFromStemOrBranch(stem || branch);
-                    const classes = getElementClasses(element);
-
-                    const sib =
-                      engineResult.sibsung?.[key === "day" ? "day" : key] ?? "";
-                    const bsib = engineResult.branchSibsung?.[key] ?? "";
-                    const twelve = engineResult.twelve?.[key] ?? "";
-
-                    return (
+                  <div className="flex gap-2 overflow-x-auto pb-1 text-xs">
+                    {final.daeWoonYear.map((y, idx) => (
                       <div
-                        key={key}
-                        className="rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden flex flex-col"
+                        key={y}
+                        className="min-w-[72px] rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-center"
                       >
-                        {/* 상단 라벨 */}
-                        <div className="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500 bg-slate-50">
-                          <span>{ganjiLabelMap[key]}</span>
-                          <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200">
-                            {twelve || "12운성"}
-                          </span>
-                        </div>
-
-                        {/* 천간/지지 박스 */}
-                        <div
-                          className={`flex-1 flex flex-col items-center justify-center gap-2 px-3 py-3 ${classes.bg}`}
-                        >
-                          <div className="text-[10px] text-slate-500">
-                            오행: {element}
-                          </div>
-                          <div className="flex flex-col items-center gap-1">
-                            <div
-                              className={`w-12 h-12 rounded-xl border-2 ${classes.border} bg-white flex items-center justify-center text-2xl font-bold ${classes.text}`}
-                            >
-                              {stem || "-"}
-                            </div>
-                            <div
-                              className={`w-12 h-12 rounded-xl border-2 ${classes.border} bg-white flex items-center justify-center text-2xl font-bold ${classes.text}`}
-                            >
-                              {branch || "-"}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 십성 정보 */}
-                        <div className="px-3 py-2 border-t border-slate-100 text-[11px] bg-white">
-                          <div className="flex flex-wrap gap-1">
-                            {sib && (
-                              <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                십성: {sib}
-                              </span>
-                            )}
-                            {bsib && (
-                              <span className="px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
-                                지지십성: {bsib}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* 대운 타임라인 */}
-            {debugData && (
-              <div className="bg-white border border-sky-100 rounded-2xl shadow-sm p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold">대운</h2>
-                  <div className="text-[11px] text-slate-500">
-                    대운수: {debugData.finalResult.daeNum} ·{" "}
-                    {debugData.finalResult.daeDir === "역행"
-                      ? "역행"
-                      : "순행"}{" "}
-                    (전통나이 기준)
-                  </div>
-                </div>
-
-                <div className="flex gap-3 overflow-x-auto pb-1">
-                  {debugData.finalResult.daeWoonYear.map((y, idx) => {
-                    const ganji =
-                      debugData.finalResult.daeWoonGanji[idx] || "";
-                    const stem = ganji[0] || "";
-                    const branch = ganji[1] || "";
-                    const element = getElementFromStemOrBranch(stem || branch);
-                    const classes = getElementClasses(element);
-
-                    return (
-                      <div
-                        key={`${y}-${idx}`}
-                        className={`min-w-[90px] rounded-xl border ${classes.border} bg-white shadow-sm flex flex-col items-center px-3 py-2 text-[11px]`}
-                      >
-                        <div className="text-slate-500 mb-0.5">{y}년</div>
-                        <div
-                          className={`w-10 h-10 rounded-lg ${classes.bg} flex items-center justify-center text-lg font-bold ${classes.text}`}
-                        >
-                          {ganji || "-"}
+                        <div className="text-[11px] text-slate-600">{y}년</div>
+                        <div className="mt-1 text-lg font-semibold text-emerald-700">
+                          {final.daeWoonGanji[idx]}
                         </div>
                         <div className="mt-1 text-[10px] text-slate-500">
-                          {10 * (idx + 1)}대운
+                          {final.daeWoon[idx] || ""}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* 세운 (연운) */}
-            {debugData && (
-              <div className="bg-white border border-sky-100 rounded-2xl shadow-sm p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold">세운 (연운)</h2>
-                  <div className="text-[11px] text-slate-500">
-                    {debugData.finalResult.seunYear[0]}년 ~{" "}
-                    {
-                      debugData.finalResult.seunYear[
-                        debugData.finalResult.seunYear.length - 1
-                      ]
-                    }
-                    년
+                    ))}
                   </div>
-                </div>
-
-                <div className="flex gap-3 overflow-x-auto pb-1">
-                  {debugData.finalResult.seunYear.map((y, idx) => {
-                    const ganji = debugData.finalResult.seunGanji[idx] || "";
-                    const stem = ganji[0] || "";
-                    const branch = ganji[1] || "";
-                    const element = getElementFromStemOrBranch(stem || branch);
-                    const classes = getElementClasses(element);
-
-                    return (
-                      <div
-                        key={`${y}-${idx}`}
-                        className="min-w-[80px] rounded-xl border border-slate-100 bg-slate-50 flex flex-col items-center px-2.5 py-2 text-[11px]"
-                      >
-                        <div className="text-slate-500 text-[10px] mb-0.5">
-                          {y}년
-                        </div>
-                        <div
-                          className={`w-9 h-9 rounded-lg ${classes.bg} flex items-center justify-center text-base font-semibold ${classes.text}`}
-                        >
-                          {ganji || "-"}
-                        </div>
-                        <div className="mt-0.5 text-[10px] text-slate-500">
-                          {element}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </section>
+                </section>
+              )}
+            </>
+          )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }
