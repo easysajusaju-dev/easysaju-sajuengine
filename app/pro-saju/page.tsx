@@ -1,6 +1,38 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+// ================================
+// KEEP ALIVE (만세력 + 프록시 서버)
+// ================================
+function keepAlive() {
+  const targets = [
+    "https://my-manseryeok.onrender.com/ping",
+    "https://saju-proxy.onrender.com/ping"
+  ];
+
+  targets.forEach((url) => {
+    try {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), 2000);
+
+      fetch(url, {
+        method: "GET",
+        signal: controller.signal,
+        cache: "no-store",
+      }).catch(() => {});
+    } catch (e) {}
+  });
+}
+
+// 페이지 로드 직후 1회 호출
+if (typeof window !== "undefined") {
+  keepAlive();
+
+  // 15초마다 서버 깨우기 (사용자 입력 중 warm 유지)
+  setInterval(() => {
+    keepAlive();
+  }, 15000);
+}
 
 // ==========================================
 // Types
@@ -35,20 +67,6 @@ interface EngineResponse {
   error?: string;
 }
 
-// ==========================================
-// KEEP ALIVE : Render PREWARM
-// ==========================================
-function prewarmRender() {
-  const url = "https://my-manseryeok.onrender.com/saju/debug?year=1978&month=1&day=1&hour=0&min=0&isLunar=false&leap=false&isMale=true";
-
-  // 첫 1회 즉시 호출
-  fetch(url, { method: "GET" }).catch(() => {});
-
-  // 2초 뒤 한 번 더 호출 (안전 + 확실하게 깨움)
-  setTimeout(() => {
-    fetch(url, { method: "GET" }).catch(() => {});
-  }, 2000);
-}
 
 // ==========================================
 // Data & Utilities
