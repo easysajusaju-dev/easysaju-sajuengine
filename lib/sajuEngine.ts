@@ -154,6 +154,8 @@ export function calcDaewoon(
 ===============================*/
 
 export function calculateSaju(input: SajuInput): SajuResult {
+
+  // 십성
   const sibsung = {
     year: getSibsung(input.dayStem, input.yearStem),
     month: getSibsung(input.dayStem, input.monthStem),
@@ -161,6 +163,15 @@ export function calculateSaju(input: SajuInput): SajuResult {
     hour: getSibsung(input.dayStem, input.hourStem)
   };
 
+  // ⭐ 십이운성 계산 추가
+  const twelve = {
+    year: getSibiunseong(input.dayStem, input.yearBranch),
+    month: getSibiunseong(input.dayStem, input.monthBranch),
+    day: getSibiunseong(input.dayStem, input.dayBranch),
+    hour: getSibiunseong(input.dayStem, input.hourBranch)
+  };
+
+  // 대운
   const daewoon = calcDaewoon(
     input.birth,
     input.yearStem,
@@ -176,6 +187,39 @@ export function calculateSaju(input: SajuInput): SajuResult {
       hour: input.hourStem + input.hourBranch
     },
     sibsung,
+    twelve,   // ← ⭐ 반드시 여기에 포함
     daewoon
   };
+}
+
+const twelveUnseong = [
+  "장생", "목욕", "관대", "임관", "제왕",
+  "쇠", "병", "사", "묘", "절", "태", "양"
+];
+const jangsaengStartMap: Record<string, string> = {
+  "갑": "亥", "甲": "亥",
+  "을": "酉", "乙": "酉",
+  "병": "申", "丙": "申",
+  "정": "申", "丁": "申",
+  "무": "申", "戊": "申",
+  "기": "申", "己": "申",
+  "경": "巳", "庚": "巳",
+  "신": "卯", "辛": "卯",
+  "임": "寅", "壬": "寅",
+  "계": "寅", "癸": "寅",
+};
+export function getSibiunseong(dayStem: string, branch: string) {
+  const startBranch = jangsaengStartMap[dayStem];
+  if (!startBranch) return "미정";
+
+  const order = ["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"];
+
+  const startIndex = order.indexOf(startBranch);
+  const targetIndex = order.indexOf(branch);
+  if (startIndex === -1 || targetIndex === -1) return "미정";
+
+  // 거리 차이 (순행)
+  const diff = (targetIndex - startIndex + 12) % 12;
+
+  return twelveUnseong[diff];
 }
