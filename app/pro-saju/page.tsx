@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getFiveElementStyle } from "@/utils/fiveElement"; // 필요 시 내부로 이동 가능
+
 
 // ================================
 // KEEP ALIVE (만세력 + 프록시 서버)
