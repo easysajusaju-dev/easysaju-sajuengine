@@ -24,3 +24,8 @@
   }
 }
 
+git add .
+git commit -m "force rebuild"
+git push
+
+
