@@ -100,13 +100,43 @@ const GANJI_60: string[] = [];
 for (let i = 0; i < 60; i++) {
   GANJI_60.push(CHEONGAN[i % 10] + JIJI[i % 12]); // ← 여기
 }
-// 한자 매핑용 (간단 변환)
-const HANJA_MAP: Record<string, string> = {
-  갑: "甲", 을: "乙", 병: "丙", 정: "丁", 무: "戊", 기: "己", 경: "庚", 신: "辛", 임: "壬", 계: "癸",
-  자: "子", 축: "丑", 인: "寅", 묘: "卯", 진: "辰", 사: "巳", 오: "午", 미: "未", 신: "申", 유: "酉", 술: "戌", 해: "亥"
+// 천간 → 한자 매핑
+const HANJA_GAN_MAP: Record<string, string> = {
+  갑: "甲",
+  을: "乙",
+  병: "丙",
+  정: "丁",
+  무: "戊",
+  기: "己",
+  경: "庚",
+  신: "辛",
+  임: "壬",
+  계: "癸",
 };
+
+// 지지 → 한자 매핑
+const HANJA_JI_MAP: Record<string, string> = {
+  자: "子",
+  축: "丑",
+  인: "寅",
+  묘: "卯",
+  진: "辰",
+  사: "巳",
+  오: "午",
+  미: "未",
+  신: "申",
+  유: "酉",
+  술: "戌",
+  해: "亥",
+};
+
+// 한글 간지("갑자") → 한자 간지("甲子")
 function toHanja(ganji: string) {
-  return (HANJA_MAP[ganji[0]] || ganji[0]) + (HANJA_MAP[ganji[1]] || ganji[1]);
+  const gan = ganji[0]; // 천간
+  const ji = ganji[1];  // 지지
+  const hanGan = HANJA_GAN_MAP[gan] ?? gan;
+  const hanJi = HANJA_JI_MAP[ji] ?? ji;
+  return hanGan + hanJi;
 }
 
 // 특정 연도의 간지 구하기 (1984년 = 갑자년 기준)
