@@ -81,29 +81,38 @@ const genderOptions: { value: Gender; label: string }[] = [
   { value: "F", label: "여자" },
 ];
 
-// --- [헬퍼 함수: 오행 색상 및 스타일] ---
 
 // 오행 색상 (배경, 글자색, 테두리)
+// [수정된 함수] 오행 색상 (한글 + 한자 모두 지원)
 function getOhaengStyles(char: string) {
-  const wood = "갑을인묘";
-  const fire = "병정사오";
-  const earth = "무기진술축미";
-  const metal = "경신신유";
-  const water = "임계해자";
+  // 한글과 한자를 모두 포함시킴
+  const wood = "갑을인묘甲乙寅卯";
+  const fire = "병정사오丙丁巳午";
+  const earth = "무기진술축미戊己辰戌丑未";
+  const metal = "경신신유庚辛申酉";
+  const water = "임계해자壬癸亥子";
 
-  // 천을귀인 앱 스타일:
-  // 목: 녹색 배경 / 화: 적색 배경 / 토: 황색(노랑) 배경 / 금: 흰색(회색) 배경 / 수: 흑색(검정) 배경
+  // 목(Wood): 초록색
   if (wood.includes(char))
-    return { bg: "bg-green-600", text: "text-white", border: "border-green-700" };
+    return { bg: "bg-green-600", text: "text-white", border: "border-green-800" };
+  
+  // 화(Fire): 빨간색
   if (fire.includes(char))
-    return { bg: "bg-red-600", text: "text-white", border: "border-red-700" };
+    return { bg: "bg-red-600", text: "text-white", border: "border-red-800" };
+  
+  // 토(Earth): 노란색 (글자는 검정)
   if (earth.includes(char))
     return { bg: "bg-yellow-400", text: "text-black", border: "border-yellow-600" };
+  
+  // 금(Metal): 흰색/회색 (글자는 검정)
   if (metal.includes(char))
     return { bg: "bg-slate-100", text: "text-black", border: "border-slate-400" };
+  
+  // 수(Water): 검정색 (글자는 흰색)
   if (water.includes(char))
-    return { bg: "bg-slate-800", text: "text-white", border: "border-black" };
+    return { bg: "bg-black", text: "text-white", border: "border-slate-600" };
 
+  // 기본값: 회색
   return { bg: "bg-gray-200", text: "text-gray-500", border: "border-gray-300" };
 }
 
