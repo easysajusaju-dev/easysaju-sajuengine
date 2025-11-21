@@ -75,7 +75,7 @@ const genderOptions: { value: Gender; label: string }[] = [
 
 // --- [간지 계산 로직] ---
 const CHEONGAN = "갑을병정무기경신임계";
-const지지 = "자축인묘진사오미신유술해";
+const JIJI = "자축인묘진사오미신유술해";
 
 // 오행 색상
 function getOhaengStyles(char: string) {
