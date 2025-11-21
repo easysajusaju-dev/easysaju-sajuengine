@@ -153,7 +153,7 @@ export default function ProSajuPage() {
 
   // --- KEEP ALIVE 실행 (처음 진입 시 Render 부팅 시작) ---
   useEffect(() => {
-    prewarmRender();
+    keepAlive()
   }, []);
 
   // Input State
