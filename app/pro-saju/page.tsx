@@ -96,9 +96,9 @@ function getOhaengStyles(char: string) {
 }
 
 // 60갑자 배열 생성
-const GANJI_60 = [];
+const GANJI_60: string[] = [];
 for (let i = 0; i < 60; i++) {
-  GANJI_60.push(CHEONGAN[i % 10] + 지지[i % 12]);
+  GANJI_60.push(CHEONGAN[i % 10] + JIJI[i % 12]); // ← 여기
 }
 // 한자 매핑용 (간단 변환)
 const HANJA_MAP: Record<string, string> = {
@@ -141,7 +141,7 @@ function getMonthlyGanjiList(yearGan: string) {
   const list = [];
   for (let i = 1; i <= 12; i++) {
     const s = CHEONGAN[(currentStemIdx + 10) % 10];
-    const b = 지지[currentBranchIdx % 12];
+    const b = JIJI[currentBranchIdx % 12];
     list.push({ month: i, ganji: toHanja(s + b) });
     currentStemIdx++;
     currentBranchIdx++;
