@@ -141,39 +141,52 @@ export default function ProSajuPage() {
   // ====================
   // 만세력 + 사주엔진 호출
   // ====================
-  async function handleSubmit() {
-    setLoading(true);
-    setError(null);
+async function handleSubmit() {
+  setLoading(true);
+  setError(null);
 
-    try {
-      const year = Number(birthdate.slice(0, 4));
-      const month = Number(birthdate.slice(4, 6));
-      const day = Number(birthdate.slice(6, 8));
-      const hour = unknownTime ? 0 : Number(birthtime.slice(0, 2));
-      const min = unknownTime ? 0 : Number(birthtime.slice(2, 4));
+  try {
+    const year = Number(birthdate.slice(0, 4));
+    const month = Number(birthdate.slice(4, 6));
+    const day = Number(birthdate.slice(6, 8));
+    const hour = unknownTime ? 0 : Number(birthtime.slice(0, 2));
+    const minute = unknownTime ? 0 : Number(birthtime.slice(2, 4));
 
-      const qs = new URLSearchParams({
-        year: String(year),
-        month: String(month),
-        day: String(day),
-        hour: String(hour),
-        min: String(min),
-        isLunar: String(isLunar),
-        leap: String(isLeap),
-        isMale: gender === "M" ? "true" : "false",
-        pivotMin: "30",
-        tzAdjust: "-30",
-        seasonAdjust: "0",
-      });
+    const payload = {
+      year,
+      month,
+      day,
+      hour,
+      minute,
+      isLunar,
+      leap: isLeap,
+      gender, // "M" or "F"
+    };
 
-      const debugRes = await fetch(
-        `https://my-manseryeok.onrender.com/saju/debug?${qs.toString()}`,
-        { cache: "no-store" }
-      );
-      if (!debugRes.ok) throw new Error("만세력 서버 오류");
+    const engineRes = await fetch("/api/saju", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-      const debugJson: ManseryeokDebug = await debugRes.json();
-      setDebugData(debugJson);
+    const json = await engineRes.json();
+    if (!json.ok) throw new Error(json.error);
+
+    // Render → Next API → 여기로 result 도착
+    const result = json.result;
+
+    // 이제 debugData 필요 없음, 모두 서버에서 내려옴
+    setEngineResult(result);
+    setDebugData(null);
+
+    setViewMode("result");
+
+  } catch (err: any) {
+    setError(err.message || "오류 발생");
+  } finally {
+    setLoading(false);
+  }
+}
 
       // -------------------------------
       // 엔진 호출 (대운수 = startAge)
