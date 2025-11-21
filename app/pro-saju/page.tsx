@@ -1,8 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+
+// ==================================================
+//  오행별 색상 (예전 그대로)
+// ==================================================
 function getFiveElementStyle(h: string) {
-  const el = {
+  const el: Record<string, string> = {
     "갑": "border-green-600 text-green-700",
     "을": "border-green-600 text-green-700",
     "병": "border-red-600 text-red-700",
@@ -27,17 +31,15 @@ function getFiveElementStyle(h: string) {
     "戌": "border-yellow-600 text-yellow-700",
     "亥": "border-blue-600 text-blue-700",
   };
-
   return el[h] || "border-gray-300 text-gray-700";
 }
 
 // ================================
-// KEEP ALIVE
+// KEEP ALIVE (만세력 서버)
 // ================================
 function keepAlive() {
   const targets = [
     "https://my-manseryeok.onrender.com/ping",
-    "https://saju-proxy.onrender.com/ping"
   ];
 
   targets.forEach((url) => {
@@ -54,33 +56,82 @@ function keepAlive() {
   });
 }
 
+// 페이지 로드 직후 1회 호출
 if (typeof window !== "undefined") {
   keepAlive();
   setInterval(() => keepAlive(), 15000);
 }
 
-// ================================
-// Types (서버가 내려주는 최종 JSON)
-// ================================
-interface SajuServerResponse {
-  ok: boolean;
-  result?: {
-    ganji: { year: string; month: string; day: string; hour: string };
-    sibsung: { year: string; month: string; day: string; hour: string };
-    branchSibsung: { year: string; month: string; day: string; hour: string };
-    twelve: { year: string; month: string; day: string; hour: string };
-    relations: {
-      hyung: any[];
-      chung: any[];
-      pa: any[];
-      hap: any[];
-    };
-    daewoon: { startAge: number; direction: "forward" | "reverse" };
-  };
-  error?: string;
+// ==========================================
+// Types
+// ==========================================
+type Gender = "M" | "F";
+
+interface FourCols {
+  year: string;
+  month: string;
+  day: string;
+  hour: string;
 }
 
-// 지장간
+interface BranchRelationItem {
+  from: "year" | "month" | "day" | "hour";
+  to: "year" | "month" | "day" | "hour";
+  branches: string;
+  kind: string; // 형/충/파/합
+}
+
+interface BranchRelations {
+  hyung: BranchRelationItem[];
+  chung: BranchRelationItem[];
+  pa: BranchRelationItem[];
+  hap: BranchRelationItem[];
+}
+
+// 서버에서 내려오는 SajuResult 형태(필요한 부분만 정리)
+interface SajuResult {
+  yearGanji: string;
+  monthGanji: string;
+  dayGanji: string;
+  hourGanji: string;
+
+  yearGod: string;
+  monthGod: string;
+  dayGod: string;
+  hourGod: string;
+
+  daeNum: number;
+  daeDir: string; // "정사" / "역사"
+  daeWoon: string[];
+  daeWoonGanji: string[];
+  daeWoonYear: number[];
+
+  seunYear: number[];
+  seunGanji: string[];
+
+  solarText: string;
+  lunarText: string;
+  termName: string | null;
+  termDate: string | null;
+
+  sibsung: FourCols;
+  branchSibsung: FourCols;
+  twelve: FourCols;
+  relations: BranchRelations;
+
+  // seun, wolun 등 추가 필드는 일단 안 써도 됨
+}
+
+// 지지 한자 -> 한글
+const normalizeBranchMap: Record<string, string> = {
+  자: "子", 축: "丑", 인: "寅", 묘: "卯", 진: "辰", 사: "巳",
+  오: "午", 미: "未", 신: "申", 유: "酉", 술: "戌", 해: "亥",
+};
+function normalizeBranch(b: string) {
+  return normalizeBranchMap[b] || b;
+}
+
+// 지장간 (당장은 화면에 그대로 둔 기존 로직)
 const JIJANGGAN: Record<string, string[]> = {
   子: ["壬", "癸"],
   丑: ["癸", "辛", "己"],
@@ -96,7 +147,7 @@ const JIJANGGAN: Record<string, string[]> = {
   亥: ["戊", "甲", "壬"],
 };
 
-// 납음은 그대로 유지 (생략)
+// 납음 – 지금은 공란 유지
 const NABEUM: Record<string, string> = {};
 function getNabeum(g: string) { return NABEUM[g] || ""; }
 
@@ -110,222 +161,610 @@ function getKoreanChar(h: string) {
   return m[h] || h;
 }
 
-type Gender = "M" | "F";
+const genderOptions = [
+  { value: "M", label: "남자" },
+  { value: "F", label: "여자" },
+];
 
-// ================================
-// MAIN PAGE
-// ================================
+// ===============================
+// MAIN COMPONENT
+// ===============================
 export default function ProSajuPage() {
 
+  useEffect(() => keepAlive(), []);
+
   const [gender, setGender] = useState<Gender>("F");
-  const [name, setName] = useState("홍길동");
-  const [birthdate, setBirthdate] = useState("19900101");
-  const [birthtime, setBirthtime] = useState("1200");
+  const [name, setName] = useState("안미정");
+  const [birthdate, setBirthdate] = useState("19780216");
+  const [birthtime, setBirthtime] = useState("1230");
   const [isLunar, setIsLunar] = useState(true);
   const [isLeap, setIsLeap] = useState(false);
   const [unknownTime, setUnknownTime] = useState(false);
 
   const [viewMode, setViewMode] = useState<"input" | "result">("input");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [saju, setSaju] = useState<SajuServerResponse["result"] | null>(null);
+  const [saju, setSaju] = useState<SajuResult | null>(null);
 
-  function resetAll() {
-    setViewMode("input");
+  function handleReset() {
     setSaju(null);
+    setViewMode("input");
+    setError(null);
   }
 
-  // ===============================
-  // 서버에 원시 입력만 보내고 → 전체 사주 JSON을 받는 구조
-  // ===============================
+  // ====================
+  // 만세력 서버 호출 (사주 전체)
+  // ====================
   async function handleSubmit() {
     setLoading(true);
-
-    const payload = {
-      birth: {
-        year: Number(birthdate.slice(0, 4)),
-        month: Number(birthdate.slice(4, 6)),
-        day: Number(birthdate.slice(6, 8)),
-        hour: unknownTime ? 0 : Number(birthtime.slice(0, 2)),
-        minute: unknownTime ? 0 : Number(birthtime.slice(2, 4)),
-        isLunar,
-        isLeap
-      },
-      gender
-    };
+    setError(null);
 
     try {
-      const res = await fetch("https://my-manseryeok.onrender.com/saju/full", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+      const year = Number(birthdate.slice(0, 4));
+      const month = Number(birthdate.slice(4, 6));
+      const day = Number(birthdate.slice(6, 8));
+      const hour = unknownTime ? 0 : Number(birthtime.slice(0, 2));
+      const min = unknownTime ? 0 : Number(birthtime.slice(2, 4));
+
+      const qs = new URLSearchParams({
+        year: String(year),
+        month: String(month),
+        day: String(day),
+        hour: String(hour),
+        min: String(min),
+        isLunar: String(isLunar),
+        leap: String(isLeap),
+        isMale: gender === "M" ? "true" : "false",
+        pivotMin: "30",
+        tzAdjust: "-30",
+        seasonAdjust: "0",
+        daeRound: "floor",
       });
 
-      const json: SajuServerResponse = await res.json();
-      if (!json.ok) throw new Error(json.error);
+      const res = await fetch(
+        `https://my-manseryeok.onrender.com/saju/full?${qs.toString()}`,
+        { cache: "no-store" }
+      );
+      if (!res.ok) throw new Error("만세력 서버 오류");
 
-      setSaju(json.result!);
+      const json = await res.json();
+      const result: SajuResult = json.result ?? json;
+
+      setSaju(result);
       setViewMode("result");
 
-    } catch (e) {
-      alert("오류: " + e);
+    } catch (err: any) {
+      setError(err.message || "오류 발생");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
-  // ===============================
-  // Column Builder
-  // ===============================
-  const getColumnData = (col: "year" | "month" | "day" | "hour") => {
+  // ============================
+  // Column Data Builder
+  // ============================
+  const getColumnData = (col: "hour" | "day" | "month" | "year") => {
     if (!saju) return null;
 
-    const ganji = saju.ganji[col];
+    const ganjiMap = {
+      year: saju.yearGanji,
+      month: saju.monthGanji,
+      day: saju.dayGanji,
+      hour: saju.hourGanji,
+    } as const;
+
+    const ganji = ganjiMap[col];
     const stem = ganji[0];
     const branch = ganji[1];
 
-    const jijanggan = JIJANGGAN[branch] || [];
+    const normBranch = normalizeBranch(branch);
+    const jijangganChars = JIJANGGAN[normBranch] || [];
 
     const rels = saju.relations;
     const myRelations: string[] = [];
+    if (rels) {
+      ["hyung", "chung", "pa", "hap"].forEach((type) => {
+        (rels as any)[type].forEach((r: BranchRelationItem) => {
+          if (r.from === col || r.to === col) {
+            if (!myRelations.includes(r.kind)) myRelations.push(r.kind);
+          }
+        });
+      });
+    }
 
-    ["hyung", "chung", "pa", "hap"].forEach((key) => {
-      for (const r of (rels as any)[key]) {
-        if (r.from === col || r.to === col) {
-          if (!myRelations.includes(r.kind)) myRelations.push(r.kind);
-        }
-      }
-    });
+    const stemSibsungMap = saju.sibsung;
+    const branchSibsungMap = saju.branchSibsung;
+    const twelveMap = saju.twelve;
 
     return {
       ganji,
-      ganjiKor: getKoreanChar(stem) + getKoreanChar(branch),
+      ganjiKor: `${getKoreanChar(stem)}${getKoreanChar(branch)}`,
       stem,
       branch,
-      stemSibsung: saju.sibsung[col],
-      branchSibsung: saju.branchSibsung[col],
-      twelve: saju.twelve[col],
-      jijanggan,
-      relations: myRelations.join(",") || "-"
+      stemSibsung:
+        col === "day" ? "일간(나)" : (stemSibsungMap as any)[col],
+      branchSibsung: (branchSibsungMap as any)[col],
+      twelve: (twelveMap as any)[col],
+      relations: myRelations.join(",") || "-",
+      jijangganChars,
+      nabeum: getNabeum(ganji),
     };
   };
 
-  // ===============================
-  // UI 렌더링 
-  // ===============================
+  // ============================
+  // JSX 출력 시작
+  // ============================
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center">
-      <div className="w-full max-w-md bg-white shadow-xl min-h-screen flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex justify-center font-sans">
+      <div className="w-full max-w-md bg-white shadow-2xl min-h-screen flex flex-col relative">
 
         {/* HEADER */}
-        <header className="bg-indigo-600 text-white px-4 py-3 text-center font-bold">
-          만세력 천을귀인 PRO (통합엔진 버전)
+        <header className="bg-[#3F51B5] text-white shadow-md z-20">
+          <div className="flex items-center justify-between px-4 py-3">
+            <h1 className="text-lg font-medium">만세력 천을귀인 V4.16</h1>
+            <div className="flex gap-4 text-xl"><span>👁️</span><span>⋮</span></div>
+          </div>
+
+          <div className="flex text-sm font-medium text-center">
+            <div
+              onClick={handleReset}
+              className={`flex-1 py-3 cursor-pointer ${
+                viewMode === "input"
+                  ? "border-b-2 border-pink-400 text-white"
+                  : "text-indigo-200"
+              }`}
+            >
+              새로 입력
+            </div>
+            <div className="flex-1 py-3 cursor-pointer text-indigo-200">저장 목록</div>
+            <div className="flex-1 py-3 cursor-pointer text-indigo-200">도움 말</div>
+          </div>
         </header>
 
-        {/* INPUT VIEW */}
         {viewMode === "input" && (
-          <div className="p-6 space-y-8">
-            
-            <div className="text-center font-semibold text-gray-600">
-              출생 정보를 입력하세요
-            </div>
+          <div className="flex-1 flex flex-col bg-white pb-20">
 
-            {/* 성별 */}
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2">
-                <input type="radio" checked={gender === "M"} onChange={() => setGender("M")} /> 남자
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="radio" checked={gender === "F"} onChange={() => setGender("F")} /> 여자
-              </label>
-            </div>
-
-            {/* 생년월일 */}
-            <div>
-              <div className="font-medium mb-1">생년월일</div>
-              <input
-                value={birthdate}
-                onChange={(e) => setBirthdate(e.target.value.replace(/\D/g, ""))}
-                className="border w-full p-2 rounded"
-              />
-              <div className="mt-2 flex gap-4 text-sm">
-                <label><input type="checkbox" checked={isLunar} onChange={(e)=>setIsLunar(e.target.checked)} /> 음력</label>
-                <label><input type="checkbox" checked={isLeap} onChange={(e)=>setIsLeap(e.target.checked)} /> 윤달</label>
+            {/* 상단 설명 */}
+            <div className="bg-pink-500 text-white px-4 py-3 flex flex-col items-center text-center shadow-inner">
+              <div className="font-bold text-sm text-yellow-300 mb-1">만세력PRO (PC겸용)</div>
+              <div className="text-xs leading-tight">
+                용어설명, 용신분석, 사주관리/메모<br />
+                <span className="text-yellow-200 font-bold">
+                  인공지능 사주풀이
+                </span>{" "}
+                사주·대운·일운까지 A.I 자동풀이
               </div>
             </div>
 
-            {/* 출생시간 */}
-            <div>
-              <div className="font-medium mb-1">출생시간</div>
-              <input
-                value={birthtime}
-                disabled={unknownTime}
-                onChange={(e)=>setBirthtime(e.target.value.replace(/\D/g,""))}
-                className="border w-full p-2 rounded disabled:bg-gray-100"
-              />
-              <label className="text-sm mt-2 block">
-                <input type="checkbox" checked={unknownTime} onChange={(e)=>setUnknownTime(e.target.checked)} /> 모름
-              </label>
+            {/* 옵션 버튼 */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span className="text-blue-500">👁️</span> 만세력 화면보기 설정(맨위)
+              </div>
+              <button className="bg-gray-500 text-white text-xs px-3 py-1.5 rounded shadow">
+                ▦ 일진달력
+              </button>
             </div>
 
-            {/* 버튼 */}
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="w-full bg-blue-500 text-white py-3 rounded font-bold"
-            >
-              {loading ? "계산중…" : "사주 조회"}
-            </button>
+            {/* 입력 폼 */}
+            <div className="px-8 py-6 space-y-8 mt-2">
 
+              {/* 성별 */}
+              <div className="flex items-center">
+                <span className="w-24 text-gray-800 text-base font-medium text-right pr-4">
+                  성별 :
+                </span>
+                <div className="flex items-center gap-6">
+                  {genderOptions.map((g) => (
+                    <label key={g.value} className="flex items-center gap-2 cursor-pointer">
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          gender === g.value
+                            ? g.value === "M"
+                              ? "border-blue-500"
+                              : "border-pink-500"
+                            : "border-gray-400"
+                        }`}
+                      >
+                        {gender === g.value && (
+                          <div
+                            className={`w-2.5 h-2.5 rounded-full ${
+                              g.value === "M" ? "bg-blue-500" : "bg-pink-500"
+                            }`}
+                          />
+                        )}
+                      </div>
+                      <span className="text-gray-700 text-base">{g.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* 이름 */}
+              <div className="flex items-center">
+                <span className="w-24 text-gray-800 text-base font-medium text-right pr-4">
+                  이름 :
+                </span>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="flex-1 border-b-2 border-gray-300 focus:border-pink-500 outline-none py-1 text-lg"
+                />
+              </div>
+
+              {/* 생년월일 */}
+              <div className="flex items-center">
+                <span className="w-24 text-gray-800 text-base font-medium text-right pr-4">
+                  생년월일 :
+                </span>
+                <div className="flex flex-1 items-center gap-3">
+                  <input
+                    value={birthdate}
+                    onChange={(e) => setBirthdate(e.target.value.replace(/\D/g, ""))}
+                    className="w-32 border-b-2 border-gray-300 focus:border-pink-500 outline-none py-1 text-lg tracking-wide"
+                  />
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isLunar}
+                      onChange={(e) => setIsLunar(e.target.checked)}
+                      className="w-5 h-5 accent-pink-500"
+                    />
+                    <span className="text-gray-700 text-sm">음력</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isLeap}
+                      onChange={(e) => setIsLeap(e.target.checked)}
+                      className="w-5 h-5 accent-pink-500"
+                    />
+                    <span className="text-gray-700 text-sm">윤달</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* 출생시간 */}
+              <div className="flex items-center">
+                <span className="w-24 text-gray-800 text-base font-medium text-right pr-4">
+                  출생시간 :
+                </span>
+                <div className="flex flex-1 items-center gap-6">
+                  <input
+                    value={birthtime}
+                    disabled={unknownTime}
+                    onChange={(e) =>
+                      setBirthtime(e.target.value.replace(/\D/g, ""))
+                    }
+                    className="w-24 border-b-2 border-gray-300 focus:border-pink-500 outline-none py-1 text-lg tracking-wide disabled:text-gray-300"
+                  />
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={unknownTime}
+                      onChange={(e) => setUnknownTime(e.target.checked)}
+                      className="w-5 h-5 accent-pink-500"
+                    />
+                    <span className="text-gray-700 text-sm">모름</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* 하단 버튼 */}
+            <div className="fixed bottom-0 w-full max-w-md grid grid-cols-3 h-14 text-white font-bold text-lg shadow-lg z-30">
+              <button onClick={handleReset} className="bg-[#FFB74D]">
+                새로고침
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="bg-[#4FC3F7]"
+              >
+                {loading ? "분석중…" : "사주조회"}
+              </button>
+              <button className="bg-[#81C784]">저장하기</button>
+            </div>
           </div>
         )}
 
         {/* RESULT VIEW */}
         {viewMode === "result" && saju && (
-          <div className="p-4 space-y-4">
+          <main className="flex-1 overflow-y-auto bg-white pb-20">
 
-            <div className="font-bold text-lg text-center text-indigo-700">
-              {name}님의 사주 결과
-            </div>
-
-            {/* 사주 원국 */}
-            <div className="grid grid-cols-4 border">
-              {(["hour", "day", "month", "year"] as const).map((col) => {
-                const d = getColumnData(col);
-                return (
-                  <div key={col} className="p-2 border text-center">
-                    <div>{col === "hour" ? "시주" : col === "day" ? "일주" : col === "month" ? "월주" : "년주"}</div>
-                    <div className="text-xl font-bold">{d?.ganji}</div>
-                    <div className="text-sm text-gray-500">{d?.ganjiKor}</div>
-                    <div className="mt-2 text-sm">{d?.stemSibsung}</div>
-                    <div className="text-sm">{d?.branchSibsung}</div>
-                    <div className="text-sm">{d?.twelve}</div>
-                    <div className="text-xs text-red-500">{d?.relations}</div>
+            {/* 사용자 정보 */}
+            <div className="bg-[#3F51B5] text-white px-4 py-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-2xl">
+                  👤
+                </div>
+                <div>
+                  <div className="font-bold text-lg">
+                    {name}(
+                      {new Date().getFullYear() -
+                        parseInt(birthdate.slice(0, 4)) +
+                        1}
+                    세)
+                    <span className="text-sm font-normal opacity-90 ml-1">
+                      (양) {saju.solarText.slice(0, 10)},{" "}
+                      {birthtime.slice(0, 2)}시 {birthtime.slice(2, 4)}분(-30)
+                    </span>
                   </div>
-                );
-              })}
+
+                  <div className="text-xs opacity-80 mt-0.5">
+                    (음) {saju.lunarText}
+                  </div>
+                </div>
+              </div>
             </div>
+
+            {/* 사주 원국 테이블 */}
+            <section className="border-b-2 border-gray-300">
+              <div className="grid grid-cols-4 text-center bg-gray-300 text-gray-800 text-sm font-bold border-b border-gray-400">
+                {["hour", "day", "month", "year"].map((col) => (
+                  <div key={col} className="py-1 border-r border-gray-400 last:border-r-0">
+                    {col === "hour"
+                      ? "시주"
+                      : col === "day"
+                      ? "일주"
+                      : col === "month"
+                      ? "월주"
+                      : "년주"}
+                    <div className="font-normal text-xs">
+                      ({getColumnData(col as any)?.ganjiKor})
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* TOP RELATIONS */}
+              <div className="grid grid-cols-4 text-center text-xs font-bold h-6 items-center bg-[#FFF9C4] border-b border-gray-400 text-red-600">
+                {["hour", "day", "month", "year"].map((col) => (
+                  <div key={col} className="border-r border-gray-400 last:border-none">
+                    {getColumnData(col as any)?.relations !== "-"
+                      ? getColumnData(col as any)?.relations
+                      : ""}
+                  </div>
+                ))}
+              </div>
+
+              {/* Stem Sibsung */}
+              <div className="grid grid-cols-4 text-center text-base font-medium py-0.5 border-b border-gray-200">
+                {["hour", "day", "month", "year"].map((col) => (
+                  <div
+                    key={col}
+                    className={`border-r border-gray-200 last:border-none ${
+                      col === "day" ? "text-blue-600 font-bold" : ""
+                    }`}
+                  >
+                    {getColumnData(col as any)?.stemSibsung}
+                  </div>
+                ))}
+              </div>
+
+              {/* 10간 / 12지지 */}
+              <div className="grid grid-cols-4 gap-1 px-1 py-1 border-b border-black">
+                {["hour", "day", "month", "year"].map((col) => {
+                  const d = getColumnData(col as any);
+                  return (
+                    <div key={`stem-${col}`} className="flex justify-center">
+                      <div
+                        className={`w-[85px] h-[85px] flex items-center justify-center text-6xl font-serif border-[3px] rounded-sm ${getFiveElementStyle(
+                          d?.stem || ""
+                        )}`}
+                      >
+                        {d?.stem}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {["hour", "day", "month", "year"].map((col) => {
+                  const d = getColumnData(col as any);
+                  return (
+                    <div key={`branch-${col}`} className="flex justify-center">
+                      <div
+                        className={`w-[85px] h-[85px] flex items-center justify-center text-6xl font-serif border-[3px] rounded-sm ${getFiveElementStyle(
+                          d?.branch || ""
+                        )}`}
+                      >
+                        {d?.branch}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Branch Sibsung */}
+              <div className="grid grid-cols-4 text-center text-base font-medium py-0.5 border-b border-gray-300">
+                {["hour", "day", "month", "year"].map((col) => (
+                  <div key={col} className="border-r border-gray-300 last:border-none">
+                    {getColumnData(col as any)?.branchSibsung}
+                  </div>
+                ))}
+              </div>
+
+              {/* 지장간 */}
+              <div className="grid grid-cols-4 text-center text-sm border-b border-gray-300 bg-white py-1">
+                {["hour", "day", "month", "year"].map((col) => {
+                  const d = getColumnData(col as any);
+                  const chars = d?.jijangganChars || [];
+                  return (
+                    <div key={col} className="border-r border-gray-300 last:border-none flex flex-col justify-center">
+                      {chars.map((char, idx) => {
+                        const label =
+                          chars.length === 2
+                            ? idx === 0
+                              ? "여기"
+                              : "본기"
+                            : idx === 0
+                            ? "여기"
+                            : idx === 1
+                            ? "중기"
+                            : "본기";
+                        return (
+                          <div key={idx} className="flex justify-center items-center gap-1 text-xs">
+                            <span className="font-bold text-black text-sm">{char}</span>
+                            <span className="text-gray-500">{label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 12운성 */}
+              <div className="grid grid-cols-4 text-center text-base font-bold py-1 border-b border-gray-300">
+                {["hour", "day", "month", "year"].map((col) => (
+                  <div key={col} className="border-r border-gray-300 last:border-none">
+                    {getColumnData(col as any)?.twelve}
+                    <div className="text-xs text-gray-500">
+                      ({getColumnData(col as any)?.twelve})
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 납음 */}
+              <div className="grid grid-cols-4 text-center text-sm py-1 bg-gray-50 border-b border-gray-300">
+                {["hour", "day", "month", "year"].map((col) => (
+                  <div key={col} className="border-r border-gray-300 last:border-none">
+                    {getColumnData(col as any)?.nabeum}
+                  </div>
+                ))}
+              </div>
+
+              {/* 하단 관계 */}
+              <div className="grid grid-cols-4 text-center text-xs font-bold h-8 items-center bg-[#FFF9C4] border-t border-gray-400">
+                {["hour", "day", "month", "year"].map((col) => (
+                  <div key={col} className="border-r border-gray-400 last:border-none">
+                    {getColumnData(col as any)?.relations}
+                  </div>
+                ))}
+              </div>
+            </section>
 
             {/* 대운 */}
-            <div className="p-3 bg-gray-100 rounded text-center">
-              <div className="font-bold mb-1">
-                대운 시작나이: {saju.daewoon.startAge}세  
+            <section className="mt-2 border-t-4 border-gray-300">
+              <div className="bg-white text-center py-1.5 font-bold text-base border-b border-gray-400">
+                전통나이 (대운수: {saju.daeNum},{" "}
+                {saju.daeDir === "정사" ? "순행" : "역행"})
               </div>
-              <div className="text-sm text-gray-600">
-                ({saju.daewoon.direction === "forward" ? "순행" : "역행"})
+
+              <div className="overflow-x-auto">
+                <div className="min-w-[350px]">
+
+                  {/* 나이 라인 */}
+                  <div className="grid grid-cols-10 bg-white border-b border-gray-300 text-sm text-center font-medium">
+                    {saju.daeWoonYear.map((_, i) => (
+                      <div key={i} className="py-1 border-r border-gray-300 last:border-none">
+                        {saju.daeNum + i * 10}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 대운 간지 */}
+                  <div className="grid grid-cols-10 bg-white border-b border-black">
+                    {saju.daeWoonGanji.map((ganji, i) => (
+                      <div
+                        key={i}
+                        className="flex flex-col items-center py-1 border-r border-gray-300 last:border-none"
+                      >
+                        <div
+                          className={`w-8 h-8 mb-0.5 flex items-center justify-center text-lg font-bold border ${getFiveElementStyle(
+                            ganji[0]
+                          )}`}
+                        >
+                          {ganji[0]}
+                        </div>
+                        <div
+                          className={`w-8 h-8 flex items-center justify-center text-lg font-bold border ${getFiveElementStyle(
+                            ganji[1]
+                          )}`}
+                        >
+                          {ganji[1]}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                </div>
               </div>
+            </section>
+
+            {/* 세운 (년운) */}
+            {saju.seunYear && (
+              <section className="mt-1 border-t-4 border-gray-300">
+                <div className="bg-white text-center py-1.5 font-bold text-base border-b border-gray-400">
+                  세운 (년운)
+                </div>
+
+                <div className="grid grid-cols-5 sm:grid-cols-10 border-b border-gray-300">
+                  {saju.seunYear.slice(0, 10).map((year, idx) => {
+                    const ganji = saju.seunGanji?.[idx] || "--";
+                    const isThisYear = year === new Date().getFullYear();
+
+                    return (
+                      <div
+                        key={year}
+                        className={`flex flex-col items-center py-2 border-r border-gray-300 ${
+                          isThisYear
+                            ? "bg-blue-50 ring-2 ring-blue-600"
+                            : "bg-white"
+                        }`}
+                      >
+                        <span
+                          className={`text-sm mb-1 font-bold ${
+                            isThisYear ? "text-blue-600" : "text-black"
+                          }`}
+                        >
+                          {year}
+                        </span>
+
+                        <div
+                          className={`w-8 h-8 mb-1 flex items-center justify-center font-bold border ${getFiveElementStyle(
+                            ganji[0]
+                          )}`}
+                        >
+                          {ganji[0]}
+                        </div>
+
+                        <div
+                          className={`w-8 h-8 flex items-center justify-center font-bold border ${getFiveElementStyle(
+                            ganji[1]
+                          )}`}
+                        >
+                          {ganji[1]}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* 하단 버튼 */}
+            <div className="fixed bottom-0 w-full max-w-md grid grid-cols-3 h-14 text-white font-bold text-lg shadow-lg z-30">
+              <button onClick={handleReset} className="bg-[#FFB74D]">
+                새로고침
+              </button>
+              <button onClick={handleReset} className="bg-[#4FC3F7]">
+                다시조회
+              </button>
+              <button className="bg-[#81C784]">저장하기</button>
             </div>
 
-            <button
-              onClick={resetAll}
-              className="w-full bg-orange-400 text-white py-3 rounded font-bold"
-            >
-              새로운 입력
-            </button>
-
-          </div>
+          </main>
         )}
 
+        {/* 에러 표시 */}
+        {error && (
+          <div className="absolute bottom-16 left-0 right-0 mx-4 bg-red-100 text-red-700 text-xs px-3 py-2 rounded shadow">
+            {error}
+          </div>
+        )}
       </div>
     </div>
   );
