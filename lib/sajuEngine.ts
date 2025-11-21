@@ -1,9 +1,7 @@
 /** ===========================================
-
-TYPE DEFINITIONS
-
-============================================
-*/
+ *  TYPE DEFINITIONS
+ * ===========================================
+ */
 
 export interface SolarTerm {
   name: string;
@@ -31,8 +29,14 @@ export interface SajuResult {
   branchSibsung: any;
   twelve: any;
   daewoon: any;
-  relations: any;   // 🔥 형·충·파·합
+  relations: any; // 형·충·파·합
 }
+
+/** ===========================================
+ *  BASIC DATA
+ * ===========================================
+ */
+
 // 천간 음양
 const stemYinYang: Record<string, "양" | "음"> = {
   갑: "양", 을: "음", 병: "양", 정: "음", 무: "양", 기: "음", 경: "양", 신: "음", 임: "양", 계: "음",
@@ -48,19 +52,23 @@ const stemElement: Record<string, "목" | "화" | "토" | "금" | "수"> = {
   임: "수", 계: "수", 壬: "수", 癸: "수",
 };
 
-// 지지 음양 (한글 + 한자)
+// 지지 음양
 const branchYinYang: Record<string, "양" | "음"> = {
-  자: "음", 축: "음", 인: "양", 묘: "음", 진: "양", 사: "양", 오: "음", 미: "음", 신: "양", 유: "음", 술: "양", 해: "양",
-  子: "음", 丑: "음", 寅: "양", 卯: "음", 辰: "양", 巳: "양", 午: "음", 未: "음", 申: "양", 酉: "음", 戌: "양", 亥: "양",
+  자: "음", 축: "음", 인: "양", 묘: "음", 진: "양", 사: "양",
+  오: "음", 미: "음", 신: "양", 유: "음", 술: "양", 해: "양",
+  子: "음", 丑: "음", 寅: "양", 卯: "음", 辰: "양", 巳: "양",
+  午: "음", 未: "음", 申: "양", 酉: "음", 戌: "양", 亥: "양",
 };
 
-// 지지 오행 (한글 + 한자)
+// 지지 오행
 const branchElement: Record<string, "목" | "화" | "토" | "금" | "수"> = {
-  자: "수", 축: "토", 인: "목", 묘: "목", 진: "토", 사: "화", 오: "화", 미: "토", 신: "금", 유: "금", 술: "토", 해: "수",
-  子: "수", 丑: "토", 寅: "목", 卯: "목", 辰: "토", 巳: "화", 午: "화", 未: "토", 申: "금", 酉: "금", 戌: "토", 亥: "수",
+  자: "수", 축: "토", 인: "목", 묘: "목", 진: "토", 사: "화",
+  오: "화", 미: "토", 신: "금", 유: "금", 술: "토", 해: "수",
+  子: "수", 丑: "토", 寅: "목", 卯: "목", 辰: "토", 巳: "화",
+  午: "화", 未: "토", 申: "금", 酉: "금", 戌: "토", 亥: "수",
 };
 
-// 지지 한글 → 한자 정규화
+// 한글 지지 → 한자 지지
 const branchNormalize: Record<string, string> = {
   자: "子", 축: "丑", 인: "寅", 묘: "卯", 진: "辰", 사: "巳",
   오: "午", 미: "未", 신: "申", 유: "酉", 술: "戌", 해: "亥",
@@ -71,6 +79,12 @@ const branchNormalize: Record<string, string> = {
 function normalizeBranch(b: string): string {
   return branchNormalize[b] ?? b;
 }
+
+/** ===========================================
+ *  십성 계산 로직
+ * ===========================================
+ */
+
 // 내가 생(生)하는 오행
 const generate: Record<"목" | "화" | "토" | "금" | "수", "목" | "화" | "토" | "금" | "수"> = {
   목: "화",
@@ -98,51 +112,27 @@ export function getSibsung(dayStem: string, target: string, isBranch = false): s
 
   if (!myEl || !targetEl || !myYY || !targetYY) return "미정";
 
-  const sameYinYang = myYY === targetYY;
+  const same = myYY === targetYY;
 
-  // ① 오행 같음 → 비겁
-  if (myEl === targetEl) {
-    return sameYinYang ? "비견" : "겁재";
-  }
+  if (myEl === targetEl) return same ? "비견" : "겁재";
+  if (generate[myEl] === targetEl) return same ? "식신" : "상관";
+  if (control[myEl] === targetEl) return same ? "편재" : "정재";
 
-  // ② 내가 생(生)함 → 식상
-  if (generate[myEl] === targetEl) {
-    return sameYinYang ? "식신" : "상관";
-  }
+  const controlsMe = { 목: "금", 화: "수", 토: "목", 금: "화", 수: "토" };
+  if (controlsMe[myEl] === targetEl) return same ? "편관" : "정관";
 
-  // ③ 내가 극(剋)함 → 재성
-  if (control[myEl] === targetEl) {
-    return sameYinYang ? "편재" : "정재";
-  }
-
-  // ④ 나를 극함 → 관성
-  const whoControlsMe: Record<"목" | "화" | "토" | "금" | "수", "목" | "화" | "토" | "금" | "수"> = {
-    목: "금",
-    화: "수",
-    토: "목",
-    금: "화",
-    수: "토",
-  };
-  if (whoControlsMe[myEl] === targetEl) {
-    return sameYinYang ? "편관" : "정관";
-  }
-
-  // ⑤ 나를 생(生)함 → 인성
-  const whoGeneratesMe: Record<"목" | "화" | "토" | "금" | "수", "목" | "화" | "토" | "금" | "수"> = {
-    목: "수",
-    화: "목",
-    토: "화",
-    금: "토",
-    수: "금",
-  };
-  if (whoGeneratesMe[myEl] === targetEl) {
-    return sameYinYang ? "편인" : "정인";
-  }
+  const generatesMe = { 목: "수", 화: "목", 토: "화", 금: "토", 수: "금" };
+  if (generatesMe[myEl] === targetEl) return same ? "편인" : "정인";
 
   return "미정";
 }
-// 12운성 표 (최종 확인 버전)
-const twelveUnseongTable: Record<string, Record<string, string>> = {
+
+/** ===========================================
+ *  12운성
+ * ===========================================
+ */
+
+const twelveUnseongTable = {
   寅: { 甲: "건록", 乙: "제왕", 丙: "장생", 丁: "사지", 戊: "장생", 己: "사지", 庚: "절지", 辛: "태지", 壬: "병지", 癸: "목욕" },
   卯: { 甲: "제왕", 乙: "건록", 丙: "목욕", 丁: "병지", 戊: "목욕", 己: "병지", 庚: "태지", 辛: "절지", 壬: "사지", 癸: "장생" },
   辰: { 甲: "쇠지", 乙: "관대", 丙: "관대", 丁: "쇠지", 戊: "관대", 己: "쇠지", 庚: "양지", 辛: "묘지", 壬: "묘지", 癸: "양지" },
@@ -154,21 +144,27 @@ const twelveUnseongTable: Record<string, Record<string, string>> = {
   戌: { 甲: "양지", 乙: "묘지", 丙: "묘지", 丁: "양지", 戊: "묘지", 己: "양지", 庚: "쇠지", 辛: "관대", 壬: "관대", 癸: "쇠지" },
   亥: { 甲: "장생", 乙: "사지", 丙: "절지", 丁: "태지", 戊: "절지", 己: "태지", 庚: "병지", 辛: "목욕", 壬: "건록", 癸: "제왕" },
   子: { 甲: "목욕", 乙: "병지", 丙: "태지", 丁: "절지", 戊: "태지", 己: "절지", 庚: "사지", 辛: "장생", 壬: "제왕", 癸: "건록" },
-  丑: { 甲: "관대", 乙: "쇠지", 丙: "양지", 丁: "묘지", 戊: "양지", 己: "묘지", 庚: "양지", 辛: "쇠지", 壬: "절지", 癸: "관대" },
+  丑: { 甲: "관대", 乙: "쇠지", 丙: "양지", 丁: "묘지", 戊: "양지", 
+        己: "묘지", 庚: "양지", 辛: "쇠지", 壬: "절지", 癸: "관대" },
 };
 
-export function getTwelveUnseong(dayStem: string, branch: string): string {
+export function getTwelveUnseong(dayStem: string, branch: string) {
   const b = normalizeBranch(branch);
   const row = twelveUnseongTable[b];
   if (!row) return "미정";
   return row[dayStem] ?? "미정";
 }
 
-// 편하게 쓰라고 alias
-export function getTwelve(dayStem: string, branch: string): string {
+export function getTwelve(dayStem: string, branch: string) {
   return getTwelveUnseong(dayStem, branch);
 }
-function isYangStem(stem: string): boolean {
+
+/** ===========================================
+ *  대운수 방향 결정
+ * ===========================================
+ */
+
+function isYangStem(stem: string) {
   return stemYinYang[stem] === "양";
 }
 
@@ -177,6 +173,11 @@ export function getDirection(yearStem: string, gender: "M" | "F") {
   if ((yang && gender === "M") || (!yang && gender === "F")) return "forward";
   return "reverse";
 }
+
+/** ===========================================
+ *  대운수 계산
+ * ===========================================
+ */
 
 export function calcDaewoon(
   birthIso: string,
@@ -193,24 +194,17 @@ export function calcDaewoon(
     .sort((a, b) => a.d.getTime() - b.d.getTime());
 
   if (principals.length === 0) {
-    return {
-      direction,
-      diffDays: 0,
-      startAgeFloat: 0,
-      startAge: 0,
-      refTermName: "",
-      refTermDate: "",
-    };
+    return { direction, diffDays: 0, startAgeFloat: 0, startAge: 0, refTermName: "", refTermDate: "" };
   }
 
   let ref = principals[0];
 
   if (direction === "forward") {
-    const found = principals.find((t) => t.d.getTime() > birth.getTime());
+    const found = principals.find((t) => t.d > birth);
     ref = found ?? principals[principals.length - 1];
   } else {
     for (let i = principals.length - 1; i >= 0; i--) {
-      if (principals[i].d.getTime() < birth.getTime()) {
+      if (principals[i].d < birth) {
         ref = principals[i];
         break;
       }
@@ -218,7 +212,7 @@ export function calcDaewoon(
   }
 
   const diffMs = Math.abs(birth.getTime() - ref.d.getTime());
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  const diffDays = diffMs / 86400000;
   const startAgeFloat = diffDays / 3;
   const startAge = Math.round(startAgeFloat);
 
@@ -231,16 +225,20 @@ export function calcDaewoon(
     refTermDate: ref.date,
   };
 }
-// 형(刑)
-const HYUNG_SET = new Set<string>([
-  "寅巳","巳寅","寅申","申寅","巳申","申巳",   // 인사신 삼형
-  "丑戌","戌丑","丑未","未丑","戌未","未戌",   // 축술미 삼형
-  "子卯","卯子",                               // 자묘 형
-  "辰辰","午午","酉酉","亥亥",                 // 자형
+
+/** ===========================================
+ *  형·충·파·합
+ * ===========================================
+ */
+
+const HYUNG_SET = new Set([
+  "寅巳","巳寅","寅申","申寅","巳申","申巳",
+  "丑戌","戌丑","丑未","未丑","戌未","未戌",
+  "子卯","卯子",
+  "辰辰","午午","酉酉","亥亥",
 ]);
 
-// 충(沖)
-const CHUNG_SET = new Set<string>([
+const CHUNG_SET = new Set([
   "子午","午子",
   "丑未","未丑",
   "寅申","申寅",
@@ -249,8 +247,7 @@ const CHUNG_SET = new Set<string>([
   "巳亥","亥巳",
 ]);
 
-// 파(破)
-const PA_SET = new Set<string>([
+const PA_SET = new Set([
   "子酉","酉子",
   "丑辰","辰丑",
   "寅亥","亥寅",
@@ -259,8 +256,7 @@ const PA_SET = new Set<string>([
   "戌未","未戌",
 ]);
 
-// 합(육합)
-const HAP_SET = new Set<string>([
+const HAP_SET = new Set([
   "子丑","丑子",
   "寅亥","亥寅",
   "卯戌","戌卯",
@@ -271,13 +267,6 @@ const HAP_SET = new Set<string>([
 
 type BranchKey = "year" | "month" | "day" | "hour";
 
-interface RelationItem {
-  from: BranchKey;
-  to: BranchKey;
-  branches: string; // 예: "子午"
-  kind: "형" | "충" | "파" | "합";
-}
-
 export function getBranchRelations(input: SajuInput) {
   const branches: Record<BranchKey, string> = {
     year: normalizeBranch(input.yearBranch),
@@ -287,18 +276,13 @@ export function getBranchRelations(input: SajuInput) {
   };
 
   const keys: BranchKey[] = ["year", "month", "day", "hour"];
-  const hyung: RelationItem[] = [];
-  const chung: RelationItem[] = [];
-  const pa: RelationItem[] = [];
-  const hap: RelationItem[] = [];
+  const hyung = [];
+  const chung = [];
+  const pa = [];
+  const hap = [];
 
-  function push(list: RelationItem[], kind: RelationItem["kind"], a: BranchKey, b: BranchKey) {
-    list.push({
-      from: a,
-      to: b,
-      branches: branches[a] + branches[b],
-      kind,
-    });
+  function push(list: any[], kind: any, a: BranchKey, b: BranchKey) {
+    list.push({ from: a, to: b, branches: branches[a] + branches[b], kind });
   }
 
   for (let i = 0; i < keys.length; i++) {
@@ -316,43 +300,49 @@ export function getBranchRelations(input: SajuInput) {
 
   return { hyung, chung, pa, hap };
 }
+
+/** ===========================================
+ *  MAIN
+ * ===========================================
+ */
+
 export function calculateSaju(input: SajuInput): SajuResult {
   const sibsung = {
-    year:  getSibsung(input.dayStem, input.yearStem),
+    year: getSibsung(input.dayStem, input.yearStem),
     month: getSibsung(input.dayStem, input.monthStem),
-    day:   "비견",
-    hour:  getSibsung(input.dayStem, input.hourStem),
+    day: "비견",
+    hour: getSibsung(input.dayStem, input.hourStem),
   };
 
   const branchSibsung = {
-    year:  getSibsung(input.dayStem, input.yearBranch, true),
+    year: getSibsung(input.dayStem, input.yearBranch, true),
     month: getSibsung(input.dayStem, input.monthBranch, true),
-    day:   getSibsung(input.dayStem, input.dayBranch, true),
-    hour:  getSibsung(input.dayStem, input.hourBranch, true),
+    day: getSibsung(input.dayStem, input.dayBranch, true),
+    hour: getSibsung(input.dayStem, input.hourBranch, true),
   };
 
   const twelve = {
-    year:  getTwelve(input.dayStem, input.yearBranch),
+    year: getTwelve(input.dayStem, input.yearBranch),
     month: getTwelve(input.dayStem, input.monthBranch),
-    day:   getTwelve(input.dayStem, input.dayBranch),
-    hour:  getTwelve(input.dayStem, input.hourBranch),
+    day: getTwelve(input.dayStem, input.dayBranch),
+    hour: getTwelve(input.dayStem, input.hourBranch),
   };
 
   const daewoon = calcDaewoon(
-    input.birth,
-    input.yearStem,
-    input.gender,
+    input.birth, 
+    input.yearStem, 
+    input.gender, 
     input.solarTerms
   );
 
-  const relations = getBranchRelations(input); // 🔥 형·충·파·합
+  const relations = getBranchRelations(input);
 
   return {
     ganji: {
-      year:  input.yearStem  + input.yearBranch,
+      year: input.yearStem + input.yearBranch,
       month: input.monthStem + input.monthBranch,
-      day:   input.dayStem   + input.dayBranch,
-      hour:  input.hourStem  + input.hourBranch,
+      day: input.dayStem + input.dayBranch,
+      hour: input.hourStem + input.hourBranch,
     },
     sibsung,
     branchSibsung,
@@ -360,72 +350,4 @@ export function calculateSaju(input: SajuInput): SajuResult {
     daewoon,
     relations,
   };
-}
-// 천간 배열
-const STEMS = ["갑","을","병","정","무","기","경","신","임","계"];
-
-// 지지 배열
-const BRANCHES = ["자","축","인","묘","진","사","오","미","신","유","술","해"];
-
-function nextGanji(stem: string, branch: string, step = 1) {
-  let si = STEMS.indexOf(stem);
-  let bi = BRANCHES.indexOf(branch);
-
-  if (si === -1 || bi === -1) return { stem, branch };
-
-  si = (si + step + 10) % 10;
-  bi = (bi + step + 12) % 12;
-
-  return {
-    stem: STEMS[si],
-    branch: BRANCHES[bi]
-  };
-}
-function generateDaewoon(stemMonth: string, branchMonth: string, startAge: number, direction: "forward" | "reverse") {
-
-  const step = direction === "forward" ? 1 : -1;
-
-  const list = [];
-  let current = nextGanji(stemMonth, branchMonth, step); // 첫 대운 간지
-
-  for (let i = 0; i < 10; i++) {
-    const age = startAge + i * 10;
-    list.push({
-      age,
-      ganji: current.stem + current.branch
-    });
-    current = nextGanji(current.stem, current.branch, step);
-  }
-
-  return list;
-}
-
-function generateSeun(daewoonList: any[], baseYear: number) {
-  const list = [];
-
-  for (let i = 0; i < 10; i++) {
-    const year = baseYear + i;
-    const d = nextGanji(daewoonList[0].ganji[0], daewoonList[0].ganji[1], i);
-
-    list.push({
-      year,
-      ganji: d.stem + d.branch
-    });
-  }
-
-  return list;
-}
-
-function generateWolun(seunGanji: string) {
-  const stem = seunGanji[0];
-  const branch = seunGanji[1];
-
-  const list = [];
-  let c = { stem, branch };
-
-  for (let i = 0; i < 12; i++) {
-    c = nextGanji(c.stem, c.branch, 1);
-    list.push(c.stem + c.branch);
-  }
-  return list;
 }
