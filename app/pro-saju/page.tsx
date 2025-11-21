@@ -542,7 +542,8 @@ export default function ProSajuPage() {
               </div>
 
               {/* Stem Sibsung */}
-              <div className="grid grid-cols-4 text-center text-base font-medium py-0.5 border-b border-gray-200">
+              <div className="grid grid-cols-4 text-center text-base font-medium py-0.5 border-b border-gray-200 text-black">
+
                 {["hour", "day", "month", "year"].map((col) => (
                   <div
                     key={col}
@@ -591,7 +592,8 @@ export default function ProSajuPage() {
               </div>
 
               {/* Branch Sibsung */}
-              <div className="grid grid-cols-4 text-center text-base font-medium py-0.5 border-b border-gray-300">
+              <div className="grid grid-cols-4 text-center text-base font-bold py-1 border-b border-gray-300 text-black">
+
                 {["hour", "day", "month", "year"].map((col) => (
                   <div key={col} className="border-r border-gray-300 last:border-none">
                     {getColumnData(col as any)?.branchSibsung}
@@ -630,7 +632,8 @@ export default function ProSajuPage() {
               </div>
 
               {/* 12운성 */}
-              <div className="grid grid-cols-4 text-center text-base font-bold py-1 border-b border-gray-300">
+              <div className="grid grid-cols-4 text-center text-base font-bold py-1 border-b border-gray-300 text-black">
+
                 {["hour", "day", "month", "year"].map((col) => (
                   <div key={col} className="border-r border-gray-300 last:border-none">
                     {getColumnData(col as any)?.twelve}
@@ -671,8 +674,9 @@ export default function ProSajuPage() {
             {/* ============================ */}
             <section className="mt-2 border-t-4 border-gray-300">
               <div className="bg-white text-center py-1.5 font-bold text-base border-b border-gray-400">
-                전통나이 (대운수:{debugData.finalResult.daeNum},{" "}
-                {engineResult.daewoon.direction === "forward" ? "순행" : "역행"})
+               전통나이 (대운수:{engineResult.daewoon.startAge},{" "}
+  {engineResult.daewoon.direction === "forward" ? "순행" : "역행"})
+
               </div>
 
               <div className="overflow-x-auto">
