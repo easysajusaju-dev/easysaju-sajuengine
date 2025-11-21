@@ -482,7 +482,7 @@ export default function ProSajuPage() {
         {/* ------------------------------ */}
 
         {viewMode === "result" && engineResult && debugData && (
-          <main className="flex-1 overflow-y-auto bg-white pb-20">
+         <main className="flex-1 overflow-y-auto bg-white pb-20 text-black">
 
             {/* ------------------ */}
             {/* 사용자 요약 정보  */}
