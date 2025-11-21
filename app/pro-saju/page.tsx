@@ -1,6 +1,35 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+function getFiveElementStyle(h: string) {
+  const el = {
+    "갑": "border-green-600 text-green-700",
+    "을": "border-green-600 text-green-700",
+    "병": "border-red-600 text-red-700",
+    "정": "border-red-600 text-red-700",
+    "무": "border-yellow-600 text-yellow-700",
+    "기": "border-yellow-600 text-yellow-700",
+    "경": "border-gray-500 text-gray-600",
+    "신": "border-gray-500 text-gray-600",
+    "임": "border-blue-600 text-blue-700",
+    "계": "border-blue-600 text-blue-700",
+
+    "子": "border-blue-600 text-blue-700",
+    "丑": "border-yellow-600 text-yellow-700",
+    "寅": "border-green-600 text-green-700",
+    "卯": "border-green-600 text-green-700",
+    "辰": "border-yellow-600 text-yellow-700",
+    "巳": "border-red-600 text-red-700",
+    "午": "border-red-600 text-red-700",
+    "未": "border-yellow-600 text-yellow-700",
+    "申": "border-gray-500 text-gray-600",
+    "酉": "border-gray-500 text-gray-600",
+    "戌": "border-yellow-600 text-yellow-700",
+    "亥": "border-blue-600 text-blue-700",
+  };
+
+  return el[h] || "border-gray-300 text-gray-700";
+}
 
 // ================================
 // KEEP ALIVE
