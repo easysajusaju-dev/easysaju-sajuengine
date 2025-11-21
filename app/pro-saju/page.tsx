@@ -200,8 +200,9 @@ export default function ProSajuPage() {
 
   // UI 상태 (년운 선택)
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-
-  // 스크롤 Refs
+  // 공통 컬럼 (시·일·월·년주)
+  const COLS = ["hour", "day", "month", "year"] as const;
+   // 스크롤 Refs
   const seunContainerRef = useRef<HTMLDivElement>(null);
 
   // --- [API 호출 핸들러] ---
@@ -364,35 +365,96 @@ export default function ProSajuPage() {
               </div>
             </div>
 
-            {/* 원국표 */}
+             {/* 원국표 */}
             <div className="mx-2 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 mb-4">
-               <div className="grid grid-cols-4 text-center bg-gray-50 py-1 text-xs font-bold text-gray-500 border-b">
-                 <div>시주</div><div>일주</div><div>월주</div><div>년주</div>
-               </div>
-               <div className="grid grid-cols-4 border-b border-gray-100">
-                 {(["hour", "day", "month", "year"] as const).map(col => {
-                    const [s, b] = engineResult.ganji[col].split("");
-                    const sStyle = getOhaengStyles(s);
-                    return (
-                      <div key={col} className="py-3 flex flex-col items-center border-r last:border-r-0 border-gray-100">
-                        <span className="text-[10px] px-1 bg-indigo-50 text-indigo-600 rounded mb-1 font-bold">{engineResult.sibsung?.[col] || "-"}</span>
-                        <div className={`w-12 h-12 flex items-center justify-center text-2xl font-bold text-white rounded-md shadow-sm ${sStyle.bg} ${sStyle.border}`}>{s}</div>
+              {/* 시주 / 일주 / 월주 / 년주 헤더 */}
+              <div className="grid grid-cols-4 text-center bg-gray-50 py-1 text-xs font-bold text-gray-600 border-b">
+                <div>시주</div>
+                <div>일주</div>
+                <div>월주</div>
+                <div>년주</div>
+              </div>
+
+              {/* 1줄: 천간 십신 + 큰 천간 글자 */}
+              <div className="grid grid-cols-4 border-b border-gray-100 bg-white">
+                {COLS.map((col) => {
+                  const [stem] = engineResult.ganji[col].split("");
+                  const sStyle = getOhaengStyles(stem);
+                  const ganSibsung =
+                    col === "day" ? "일간(나)" : engineResult.sibsung?.[col] || "-";
+
+                  return (
+                    <div
+                      key={`stem-${col}`}
+                      className="py-3 flex flex-col items-center border-r last:border-r-0 border-gray-100"
+                    >
+                      <span className="mb-1 text-[11px] font-bold text-indigo-700">
+                        {ganSibsung}
+                      </span>
+                      <div
+                        className={`w-16 h-16 flex items-center justify-center text-3xl font-bold text-white rounded-md shadow-sm ${sStyle.bg} ${sStyle.border}`}
+                      >
+                        {stem}
                       </div>
-                    )
-                 })}
-               </div>
-               <div className="grid grid-cols-4">
-                 {(["hour", "day", "month", "year"] as const).map(col => {
-                    const [s, b] = engineResult.ganji[col].split("");
-                    const bStyle = getOhaengStyles(b);
-                    return (
-                      <div key={col} className="py-3 flex flex-col items-center border-r last:border-r-0 border-gray-100">
-                        <div className={`w-12 h-12 flex items-center justify-center text-2xl font-bold text-white rounded-md shadow-sm mb-1 ${bStyle.bg} ${bStyle.border}`}>{b}</div>
-                        <span className="text-[10px] text-gray-400">{engineResult.twelve?.[col]}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 2줄: 큰 지지 글자 */}
+              <div className="grid grid-cols-4 border-b border-gray-100 bg-white">
+                {COLS.map((col) => {
+                  const [, branch] = engineResult.ganji[col].split("");
+                  const bStyle = getOhaengStyles(branch);
+
+                  return (
+                    <div
+                      key={`branch-${col}`}
+                      className="py-3 flex flex-col items-center border-r last:border-r-0 border-gray-100"
+                    >
+                      <div
+                        className={`w-16 h-16 flex items-center justify-center text-3xl font-bold text-white rounded-md shadow-sm ${bStyle.bg} ${bStyle.border}`}
+                      >
+                        {branch}
                       </div>
-                    )
-                 })}
-               </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 3줄: 지지 십신 */}
+              <div className="grid grid-cols-4 border-b border-gray-100 bg-white">
+                {COLS.map((col) => {
+                  const jiSibsung = engineResult.branchSibsung?.[col] || "-";
+                  return (
+                    <div
+                      key={`ji-sibsung-${col}`}
+                      className="py-1.5 flex items-center justify-center border-r last:border-r-0 border-gray-100"
+                    >
+                      <span className="text-[11px] font-semibold text-blue-600">
+                        {jiSibsung}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 4줄: 12운성 */}
+              <div className="grid grid-cols-4 bg-white">
+                {COLS.map((col) => {
+                  const star = engineResult.twelve?.[col] || "-";
+                  return (
+                    <div
+                      key={`twelve-${col}`}
+                      className="py-1.5 flex items-center justify-center border-r last:border-r-0 border-gray-100"
+                    >
+                      <span className="inline-block px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[11px] font-semibold">
+                        {star}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* 대운 (현재 대운 박스 강조) */}
