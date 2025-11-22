@@ -319,7 +319,7 @@ export default function ProSajuPage() {
         
         {/* 헤더 */}
         <header className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center shadow z-10 sticky top-0">
-          <h1 className="font-bold text-lg">만세력 Pro</h1>
+          <h1 className="font-bold text-lg">이지사주 만세력 Pro</h1>
           <button onClick={() => setIsFormOpen(!isFormOpen)} className="text-xs bg-white/20 px-3 py-1 rounded hover:bg-white/30 transition">
             {isFormOpen ? "닫기" : "입력 열기"}
           </button>
