@@ -386,7 +386,7 @@ export default function ProSajuPage() {
     return (
       <div
         key={`stem-${col}`}
-        className="py-1 flex flex-col items-center border-r last:border-r-0 border-gray-100"
+        className="py-0.5 flex flex-col items-center border-r last:border-r-0 border-gray-100"
       >
         <span className="mb-1 text-[11px] font-bold text-indigo-700">
           {ganSibsung}
@@ -416,7 +416,7 @@ export default function ProSajuPage() {
     return (
       <div
         key={`branch-${col}`}
-        className="py-1 flex flex-col items-center border-r last:border-r-0 border-gray-100"
+        className="py-0.5 flex flex-col items-center border-r last:border-r-0 border-gray-100"
       >
         <div
           className={`
@@ -440,7 +440,7 @@ export default function ProSajuPage() {
                   return (
                     <div
                       key={`ji-sibsung-${col}`}
-                      className="py-1.5 flex items-center justify-center border-r last:border-r-0 border-gray-100"
+                      className="py-0.5 flex items-center justify-center border-r last:border-r-0 border-gray-100"
                     >
                       <span className="text-[11px] font-semibold text-blue-600">
                         {jiSibsung}
@@ -457,7 +457,7 @@ export default function ProSajuPage() {
                   return (
                     <div
                       key={`twelve-${col}`}
-                      className="py-1.5 flex items-center justify-center border-r last:border-r-0 border-gray-100"
+                      className="py-0.5 flex items-center justify-center border-r last:border-r-0 border-gray-100"
                     >
                       <span className="inline-block px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[11px] font-semibold">
                         {star}
@@ -470,14 +470,14 @@ export default function ProSajuPage() {
 
             {/* 대운 (현재 대운 박스 강조) */}
             <div className="mx-2 mb-4">
-              <div className="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-t-lg flex justify-between items-center">
+              <div className="bg-blue-600 text-white text-xs font-bold px-3 py-0.5 rounded-t-lg flex justify-between items-center">
                 <span>대운 (대운수: {debugData.finalResult.daeNum})</span>
                 <span className="opacity-80">
                   {engineResult.daewoon.direction === "forward" ? "순행" : "역행"}
                 </span>
               </div>
-              <div className="bg-white rounded-b-lg border border-gray-200 px-2 py-2 overflow-x-auto">
-                <div className="flex gap-2 min-w-[360px]">
+              <div className="bg-white rounded-b-lg border border-gray-200 px-2 py-0.5 overflow-x-auto">
+                <div className="flex gap-1 min-w-[360px]">
                   {debugData.finalResult.daeWoonYear.map((startYear, i) => {
                     // 대운 나이 계산 (1대운, 11대운...)
                     const age = i * 10 + debugData.finalResult.daeNum;
@@ -493,7 +493,7 @@ export default function ProSajuPage() {
                     return (
                       <div
                         key={i}
-                        className={`flex flex-col items-center px-1 py-1 rounded-lg transition-all ${
+                        className={`flex flex-col items-center px-1 py-0.5 rounded-lg transition-all ${
                           isCurrent
                             ? "ring-2 ring-blue-500 bg-blue-50 scale-105 z-10 shadow-md"
                             : "hover:bg-gray-50"
@@ -525,14 +525,14 @@ export default function ProSajuPage() {
 
             {/* 세운 (년운) - 100년치 스크롤 + 중앙 정렬 */}
             <div className="mx-2 mb-4">
-              <div className="bg-gray-800 text-white text-xs font-bold px-3 py-1.5 rounded-t-lg">
+              <div className="bg-gray-800 text-white text-xs font-bold px-3 py-0.5 rounded-t-lg">
                 세운 (년운) - {selectedYear}년 선택됨
               </div>
               <div
                 ref={seunContainerRef}
                 className="bg-white rounded-b-lg border border-gray-200 overflow-x-auto scrollbar-hide"
               >
-                <div className="flex px-2 py-3 w-max">
+                <div className="flex px-2 py-0.5 w-max">
                   {seunList.map((item) => {
                     const isSelected = item.year === selectedYear;
                     const [s, b] = item.ganji.split("");
@@ -544,7 +544,7 @@ export default function ProSajuPage() {
                         key={item.year}
                         id={`year-${item.year}`} // 스크롤 타겟용 ID
                         onClick={() => setSelectedYear(item.year)}
-                        className={`flex flex-col items-center mx-1.5 px-1.5 py-1 rounded-lg cursor-pointer transition-all duration-200 ${
+                        className={`flex flex-col items-center mx-1.5 px-1.5 py-0.5 rounded-lg cursor-pointer transition-all duration-200 ${
                           isSelected
                             ? "bg-gray-100 ring-2 ring-gray-700 scale-110 z-10 shadow-md"
                             : "hover:bg-gray-50"
@@ -579,11 +579,11 @@ export default function ProSajuPage() {
 
             {/* 월운 (선택된 년도에 따라 변경) */}
             <div className="mx-2 mb-10">
-              <div className="bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-t-lg">
+              <div className="bg-indigo-500 text-white text-xs font-bold px-3 py-0.5 rounded-t-lg">
                 월운 ({selectedYear}년)
               </div>
               <div className="bg-white rounded-b-lg border border-gray-200 overflow-x-auto scrollbar-hide">
-                <div className="flex px-2 py-3 w-max justify-between min-w-full">
+                <div className="flex px-2 py-0.5 w-max justify-between min-w-full">
                   {wolunList.map((item) => {
                     const [s, b] = item.ganji.split("");
                     const sStyle = getOhaengStyles(s);
