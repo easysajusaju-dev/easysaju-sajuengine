@@ -121,7 +121,7 @@ function getOhaengStyles(ch: string) {
   if ("경신신유庚辛申酉".includes(ch))
     return { bg: "bg-slate-200", border: "border-slate-400" };
   if ("임계해자壬癸亥子".includes(ch))
-    return { bg: "bg-teal-400", border: "border-teal-600" };
+    return { bg: "bg-sky-400"", border: "border-sky-700" };
   return { bg: "bg-gray-200", border: "border-gray-300" };
 }
 
