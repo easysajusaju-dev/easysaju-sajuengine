@@ -319,7 +319,7 @@ export default function ProSajuPage() {
         
         {/* 헤더 */}
         <header className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center shadow z-10 sticky top-0">
-          <h1 className="font-bold text-lg">만세력 Pro</h1>
+          <h1 className="font-bold text-lg">이지사주 만세력 Pro</h1>
           <button onClick={() => setIsFormOpen(!isFormOpen)} className="text-xs bg-white/20 px-3 py-1 rounded hover:bg-white/30 transition">
             {isFormOpen ? "닫기" : "입력 열기"}
           </button>
@@ -375,53 +375,64 @@ export default function ProSajuPage() {
                 <div>년주</div>
               </div>
 
-              {/* 1줄: 천간 십신 + 큰 천간 글자 */}
-              <div className="grid grid-cols-4 border-b border-gray-100 bg-white">
-                {COLS.map((col) => {
-                  const [stem] = engineResult.ganji[col].split("");
-                  const sStyle = getOhaengStyles(stem);
-                  const ganSibsung =
-                    col === "day" ? "일간(나)" : engineResult.sibsung?.[col] || "-";
+             {/* 1줄: 천간 */}
+<div className="grid grid-cols-4 border-b border-gray-100 bg-white">
+  {COLS.map((col) => {
+    const [stem] = engineResult.ganji[col].split("");
+    const sStyle = getOhaengStyles(stem);
+    const ganSibsung =
+      col === "day" ? "일간(나)" : engineResult.sibsung?.[col] || "-";
 
-                  return (
-                    <div
-                      key={`stem-${col}`}
-                      className="py-3 flex flex-col items-center border-r last:border-r-0 border-gray-100"
-                    >
-                      <span className="mb-1 text-[11px] font-bold text-indigo-700">
-                        {ganSibsung}
-                      </span>
-                      <div
-                        className={`w-16 h-16 flex items-center justify-center text-3xl font-bold text-white rounded-md shadow-sm ${sStyle.bg} ${sStyle.border}`}
-                      >
-                        {stem}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+    return (
+      <div
+        key={`stem-${col}`}
+        className="py-0.5 flex flex-col items-center border-r last:border-r-0 border-gray-100"
+      >
+        <span className="mb-1 text-[11px] font-bold text-indigo-700">
+          {ganSibsung}
+        </span>
+        <div
+          className={`
+            w-full max-w-[88px] aspect-square
+            flex items-center justify-center
+            text-4xl sm:text-5xl font-bold text-white
+            rounded-md shadow-sm
+            ${sStyle.bg} ${sStyle.border}
+          `}
+        >
+          {stem}
+        </div>
+      </div>
+    );
+  })}
+</div>
 
-              {/* 2줄: 큰 지지 글자 */}
-              <div className="grid grid-cols-4 border-b border-gray-100 bg-white">
-                {COLS.map((col) => {
-                  const [, branch] = engineResult.ganji[col].split("");
-                  const bStyle = getOhaengStyles(branch);
+{/* 2줄: 지지 */}
+<div className="grid grid-cols-4 border-b border-gray-100 bg-white">
+  {COLS.map((col) => {
+    const [, branch] = engineResult.ganji[col].split("");
+    const bStyle = getOhaengStyles(branch);
 
-                  return (
-                    <div
-                      key={`branch-${col}`}
-                      className="py-3 flex flex-col items-center border-r last:border-r-0 border-gray-100"
-                    >
-                      <div
-                        className={`w-16 h-16 flex items-center justify-center text-3xl font-bold text-white rounded-md shadow-sm ${bStyle.bg} ${bStyle.border}`}
-                      >
-                        {branch}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
+    return (
+      <div
+        key={`branch-${col}`}
+        className="py-0.5 flex flex-col items-center border-r last:border-r-0 border-gray-100"
+      >
+        <div
+          className={`
+            w-full max-w-[88px] aspect-square
+            flex items-center justify-center
+            text-4xl sm:text-5xl font-bold text-white
+            rounded-md shadow-sm
+            ${bStyle.bg} ${bStyle.border}
+          `}
+        >
+          {branch}
+        </div>
+      </div>
+    );
+  })}
+</div>
               {/* 3줄: 지지 십신 */}
               <div className="grid grid-cols-4 border-b border-gray-100 bg-white">
                 {COLS.map((col) => {
@@ -429,7 +440,7 @@ export default function ProSajuPage() {
                   return (
                     <div
                       key={`ji-sibsung-${col}`}
-                      className="py-1.5 flex items-center justify-center border-r last:border-r-0 border-gray-100"
+                      className="py-0.5 flex items-center justify-center border-r last:border-r-0 border-gray-100"
                     >
                       <span className="text-[11px] font-semibold text-blue-600">
                         {jiSibsung}
@@ -446,7 +457,7 @@ export default function ProSajuPage() {
                   return (
                     <div
                       key={`twelve-${col}`}
-                      className="py-1.5 flex items-center justify-center border-r last:border-r-0 border-gray-100"
+                      className="py-0.5 flex items-center justify-center border-r last:border-r-0 border-gray-100"
                     >
                       <span className="inline-block px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[11px] font-semibold">
                         {star}
@@ -459,93 +470,148 @@ export default function ProSajuPage() {
 
             {/* 대운 (현재 대운 박스 강조) */}
             <div className="mx-2 mb-4">
-              <div className="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-t-lg flex justify-between items-center">
-                 <span>대운 (대운수: {debugData.finalResult.daeNum})</span>
-                 <span className="opacity-80">{engineResult.daewoon.direction === "forward" ? "순행" : "역행"}</span>
+              <div className="bg-blue-600 text-white text-xs font-bold px-3 py-0.5 rounded-t-lg flex justify-between items-center">
+                <span>대운 (대운수: {debugData.finalResult.daeNum})</span>
+                <span className="opacity-80">
+                  {engineResult.daewoon.direction === "forward" ? "순행" : "역행"}
+                </span>
               </div>
-              <div className="bg-white rounded-b-lg border border-gray-200 p-2 overflow-x-auto">
-                 <div className="flex justify-between min-w-[320px]">
-                    {debugData.finalResult.daeWoonYear.map((startYear, i) => {
-                       // 대운 나이 계산 (1대운, 11대운...)
-                       const age = (i * 10) + debugData.finalResult.daeNum;
-                       const nextAge = age + 10;
-                       // 현재 나이가 이 대운 범위에 있는지?
-                       const isCurrent = koreanAge >= age && koreanAge < nextAge;
+              <div className="bg-white rounded-b-lg border border-gray-200 px-2 py-0.5 overflow-x-auto">
+                <div className="flex gap-1 min-w-[360px]">
+                  {debugData.finalResult.daeWoonYear.map((startYear, i) => {
+                    // 대운 나이 계산 (1대운, 11대운...)
+                    const age = i * 10 + debugData.finalResult.daeNum;
+                    const nextAge = age + 10;
+                    // 현재 나이가 이 대운 범위에 있는지?
+                    const isCurrent = koreanAge >= age && koreanAge < nextAge;
 
-                       const [s, b] = debugData.finalResult.daeWoonGanji[i].split("");
-                       const sStyle = getOhaengStyles(s);
-                       const bStyle = getOhaengStyles(b);
+                    const [s, b] =
+                      debugData.finalResult.daeWoonGanji[i].split("");
+                    const sStyle = getOhaengStyles(s);
+                    const bStyle = getOhaengStyles(b);
 
-                       return (
-                         <div key={i} className={`flex flex-col items-center p-1 rounded-lg transition-all ${isCurrent ? 'ring-2 ring-blue-500 bg-blue-50 scale-105 z-10' : 'opacity-90'}`}>
-                            <span className={`text-[10px] mb-1 font-bold ${isCurrent ? 'text-blue-600' : 'text-gray-400'}`}>{age}</span>
-                            <div className={`w-7 h-7 mb-1 flex items-center justify-center text-sm font-bold text-white rounded ${sStyle.bg}`}>{s}</div>
-                            <div className={`w-7 h-7 flex items-center justify-center text-sm font-bold text-white rounded ${bStyle.bg}`}>{b}</div>
-                         </div>
-                       )
-                    })}
-                 </div>
+                    return (
+                      <div
+                        key={i}
+                        className={`flex flex-col items-center px-1 py-0.5 rounded-lg transition-all ${
+                          isCurrent
+                            ? "ring-2 ring-blue-500 bg-blue-50 scale-105 z-10 shadow-md"
+                            : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <span
+                          className={`text-[11px] mb-1 font-bold ${
+                            isCurrent ? "text-blue-700" : "text-gray-400"
+                          }`}
+                        >
+                          {age}
+                        </span>
+                        <div
+                          className={`w-10 h-10 mb-1 flex items-center justify-center text-xl font-bold text-white rounded ${sStyle.bg}`}
+                        >
+                          {s}
+                        </div>
+                        <div
+                          className={`w-10 h-10 flex items-center justify-center text-xl font-bold text-white rounded ${bStyle.bg}`}
+                        >
+                          {b}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
             {/* 세운 (년운) - 100년치 스크롤 + 중앙 정렬 */}
             <div className="mx-2 mb-4">
-               <div className="bg-gray-800 text-white text-xs font-bold px-3 py-1.5 rounded-t-lg">
-                  세운 (년운) - {selectedYear}년 선택됨
-               </div>
-               <div 
-                 ref={seunContainerRef}
-                 className="bg-white rounded-b-lg border border-gray-200 overflow-x-auto scrollbar-hide"
-               >
-                  <div className="flex px-2 py-3 w-max">
-                     {seunList.map((item) => {
-                        const isSelected = item.year === selectedYear;
-                        const [s, b] = item.ganji.split("");
-                        const sStyle = getOhaengStyles(s);
-                        const bStyle = getOhaengStyles(b);
-                        
-                        return (
-                          <div 
-                            key={item.year} 
-                            id={`year-${item.year}`} // 스크롤 타겟용 ID
-                            onClick={() => setSelectedYear(item.year)}
-                            className={`flex flex-col items-center mx-1 p-1.5 rounded-lg cursor-pointer transition-all duration-200
-                              ${isSelected ? 'bg-gray-100 ring-2 ring-gray-600 scale-110 z-10 shadow-md' : 'hover:bg-gray-50'}
-                            `}
-                          >
-                             <span className={`text-[10px] font-bold mb-1 ${isSelected ? 'text-gray-900' : 'text-gray-400'}`}>{item.year}</span>
-                             <div className={`w-8 h-8 mb-1 flex items-center justify-center text-lg font-bold text-white rounded shadow-sm ${sStyle.bg}`}>{s}</div>
-                             <div className={`w-8 h-8 flex items-center justify-center text-lg font-bold text-white rounded shadow-sm ${bStyle.bg}`}>{b}</div>
-                             <span className="text-[9px] text-gray-400 mt-1">{item.age}세</span>
-                          </div>
-                        )
-                     })}
-                  </div>
-               </div>
+              <div className="bg-gray-800 text-white text-xs font-bold px-3 py-0.5 rounded-t-lg">
+                세운 (년운) - {selectedYear}년 선택됨
+              </div>
+              <div
+                ref={seunContainerRef}
+                className="bg-white rounded-b-lg border border-gray-200 overflow-x-auto scrollbar-hide"
+              >
+                <div className="flex px-2 py-0.5 w-max">
+                  {seunList.map((item) => {
+                    const isSelected = item.year === selectedYear;
+                    const [s, b] = item.ganji.split("");
+                    const sStyle = getOhaengStyles(s);
+                    const bStyle = getOhaengStyles(b);
+
+                    return (
+                      <div
+                        key={item.year}
+                        id={`year-${item.year}`} // 스크롤 타겟용 ID
+                        onClick={() => setSelectedYear(item.year)}
+                        className={`flex flex-col items-center mx-1.5 px-1.5 py-0.5 rounded-lg cursor-pointer transition-all duration-200 ${
+                          isSelected
+                            ? "bg-gray-100 ring-2 ring-gray-700 scale-110 z-10 shadow-md"
+                            : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <span
+                          className={`text-[11px] font-bold mb-1 ${
+                            isSelected ? "text-gray-900" : "text-gray-400"
+                          }`}
+                        >
+                          {item.year}
+                        </span>
+                        <div
+                          className={`w-10 h-10 mb-1 flex items-center justify-center text-xl font-bold text-white rounded shadow-sm ${sStyle.bg}`}
+                        >
+                          {s}
+                        </div>
+                        <div
+                          className={`w-10 h-10 flex items-center justify-center text-xl font-bold text-white rounded shadow-sm ${bStyle.bg}`}
+                        >
+                          {b}
+                        </div>
+                        <span className="text-[10px] text-gray-400 mt-1">
+                          {item.age}세
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             {/* 월운 (선택된 년도에 따라 변경) */}
             <div className="mx-2 mb-10">
-               <div className="bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-t-lg">
-                  월운 ({selectedYear}년)
-               </div>
-               <div className="bg-white rounded-b-lg border border-gray-200 overflow-x-auto scrollbar-hide">
-                  <div className="flex px-2 py-3 w-max justify-between min-w-full">
-                     {wolunList.map((item) => {
-                        const [s, b] = item.ganji.split("");
-                        const sStyle = getOhaengStyles(s);
-                        const bStyle = getOhaengStyles(b);
-                        
-                        return (
-                          <div key={item.month} className="flex flex-col items-center mx-1.5 min-w-[40px]">
-                             <span className="text-[10px] font-bold text-gray-500 mb-1">{item.month}월</span>
-                             <div className={`w-8 h-8 mb-1 flex items-center justify-center text-lg font-bold text-white rounded shadow-sm ${sStyle.bg}`}>{s}</div>
-                             <div className={`w-8 h-8 flex items-center justify-center text-lg font-bold text-white rounded shadow-sm ${bStyle.bg}`}>{b}</div>
-                          </div>
-                        )
-                     })}
-                  </div>
-               </div>
+              <div className="bg-indigo-500 text-white text-xs font-bold px-3 py-0.5 rounded-t-lg">
+                월운 ({selectedYear}년)
+              </div>
+              <div className="bg-white rounded-b-lg border border-gray-200 overflow-x-auto scrollbar-hide">
+                <div className="flex px-2 py-0.5 w-max justify-between min-w-full">
+                  {wolunList.map((item) => {
+                    const [s, b] = item.ganji.split("");
+                    const sStyle = getOhaengStyles(s);
+                    const bStyle = getOhaengStyles(b);
+
+                    return (
+                      <div
+                        key={item.month}
+                        className="flex flex-col items-center mx-2 min-w-[44px]"
+                      >
+                        <span className="text-[11px] font-bold text-gray-500 mb-1">
+                          {item.month}월
+                        </span>
+                        <div
+                          className={`w-9 h-9 mb-1 flex items-center justify-center text-lg font-bold text-white rounded shadow-sm ${sStyle.bg}`}
+                        >
+                          {s}
+                        </div>
+                        <div
+                          className={`w-9 h-9 flex items-center justify-center text-lg font-bold text-white rounded shadow-sm ${bStyle.bg}`}
+                        >
+                          {b}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </main>
         )}
