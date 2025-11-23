@@ -114,16 +114,18 @@ function getMonthlyGanjiList(yearStem: string) {
 function getOhaengStyles(ch: string) {
   if ("갑을인묘甲乙寅卯".includes(ch))
     return { bg: "bg-green-400", border: "border-green-700" };
-  if ("병정사오丙丁巳午".includes(ch))
+  else if ("병정사오丙丁巳午".includes(ch))
     return { bg: "bg-red-400", border: "border-red-700" };
-  if ("무기진술축미戊己辰戌丑未".includes(ch))
+  else if ("무기진술축미戊己辰戌丑未".includes(ch))
     return { bg: "bg-yellow-300", border: "border-yellow-600" };
-  if ("경신신유庚辛申酉".includes(ch))
+  else if ("경신신유庚辛申酉".includes(ch))
     return { bg: "bg-slate-200", border: "border-slate-400" };
-  if ("임계해자壬癸亥子".includes(ch))
+  else if ("임계해자壬癸亥子".includes(ch))
     return { bg: "bg-sky-400", border: "border-sky-700" };
-  return { bg: "bg-gray-200", border: "border-gray-300" };
+  else
+    return { bg: "bg-gray-200", border: "border-gray-300" };
 }
+
 
 // 지장간
 const BRANCH_HIDDEN: Record<string, string[]> = {
