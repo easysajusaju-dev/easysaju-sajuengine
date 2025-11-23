@@ -439,10 +439,10 @@ export default function ProSajuPage() {
             {/* 원국 카드 */}
             <div className="mx-2 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-3">
               <div className="grid grid-cols-4 bg-gray-50 text-center font-bold py-2 border-b">
-                <div>시주</div>
-                <div>일주</div>
-                <div>월주</div>
                 <div>년주</div>
+                <div>월주</div>
+                <div>일주</div>
+                <div>시주</div>
               </div>
 
               {/* 천간 */}
