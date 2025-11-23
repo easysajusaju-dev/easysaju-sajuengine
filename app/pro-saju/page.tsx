@@ -375,7 +375,7 @@ export default function ProSajuPage() {
                 <div>년주</div>
               </div>
 
-              // 1줄: 천간
+             {/* 1줄: 천간 */}
 <div className="grid grid-cols-4 border-b border-gray-100 bg-white">
   {COLS.map((col) => {
     const [stem] = engineResult.ganji[col].split("");
@@ -407,7 +407,7 @@ export default function ProSajuPage() {
   })}
 </div>
 
-// 2줄: 지지
+{/* 2줄: 지지 */}
 <div className="grid grid-cols-4 border-b border-gray-100 bg-white">
   {COLS.map((col) => {
     const [, branch] = engineResult.ganji[col].split("");
