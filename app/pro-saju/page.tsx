@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 
 // --- [타입 정의] ---
 type Gender = "M" | "F";
+type PillarKey = "hour" | "day" | "month" | "year";
 
 interface ManseryeokDebug {
   input: {
@@ -48,13 +49,6 @@ interface ManseryeokDebug {
   };
 }
 
-interface EngineRelationsItem {
-  from: "year" | "month" | "day" | "hour";
-  to: "year" | "month" | "day" | "hour";
-  branches: string;
-  kind: "형" | "충" | "파" | "합";
-}
-
 interface EngineResponse {
   ok: boolean;
   result?: {
@@ -71,24 +65,6 @@ interface EngineResponse {
       direction: "forward" | "reverse";
       startAge: number;
     };
-    relations?: {
-      hyung: EngineRelationsItem[];
-      chung: EngineRelationsItem[];
-      pa: EngineRelationsItem[];
-      hap: EngineRelationsItem[];
-    };
-    hiddenStems?: {
-      year: string[];
-      month: string[];
-      day: string[];
-      hour: string[];
-    };
-    hiddenSibsung?: {
-      year: string[];
-      month: string[];
-      day: string[];
-      hour: string[];
-    };
   };
   error?: string;
 }
@@ -101,13 +77,6 @@ const genderOptions: { value: Gender; label: string }[] = [
 // 천간/지지
 const CHEONGAN = "갑을병정무기경신임계";
 const JIJI = "자축인묘진사오미신유술해";
-
-const PILLAR_LABEL: Record<"year" | "month" | "day" | "hour", string> = {
-  year: "년",
-  month: "월",
-  day: "일",
-  hour: "시",
-};
 
 // 오행 색상
 function getOhaengStyles(char: string) {
@@ -220,6 +189,53 @@ function countFiveElements(ganji: { [key: string]: string }) {
   return result;
 }
 
+// ===============================
+// 지장간 & 신살 데모용 헬퍼
+// ===============================
+
+// 지장간 표 (지지 → 지장간들)
+const JI_JANGGAN: Record<string, string[]> = {
+  자: ["癸"],
+  축: ["己", "癸", "辛"],
+  인: ["甲", "丙", "戊"],
+  묘: ["乙"],
+  진: ["戊", "乙", "癸"],
+  사: ["丙", "戊", "庚"],
+  오: ["丁", "己", "戊"],
+  미: ["己", "乙", "丁"],
+  신: ["庚", "壬", "戊"],
+  유: ["辛"],
+  술: ["戊", "辛", "丁"],
+  해: ["壬", "甲"],
+};
+
+function getHiddenStemsByBranch(branch: string): string[] {
+  // engineResult.ganji의 branch는 한글(자축인묘…) 기준이라 그대로 사용
+  return JI_JANGGAN[branch] ?? [];
+}
+
+// 간단 데모용 신살 계산 (도화/역마/화개만 우선 적용)
+function getDemoShinsal(gan: string, branch: string): string[] {
+  const list: string[] = [];
+
+  // 도화(桃花) - 자오묘유 그룹 기준 (간단 버전)
+  if ("자오묘유".includes(branch)) {
+    list.push("도화");
+  }
+
+  // 역마(驛馬) - 인신사해 그룹 기준 (간단 버전)
+  if ("인신사해".includes(branch)) {
+    list.push("역마");
+  }
+
+  // 화개(華蓋) - 진술축미 그룹 기준 (간단 버전)
+  if ("진술축미".includes(branch)) {
+    list.push("화개");
+  }
+
+  return list;
+}
+
 // --- [메인 컴포넌트] ---
 export default function ProSajuPage() {
   // 입력 상태
@@ -245,17 +261,6 @@ export default function ProSajuPage() {
   );
   const seunContainerRef = useRef<HTMLDivElement>(null);
   const COLS = ["hour", "day", "month", "year"] as const;
-
-  // 표시 옵션 패널
-  const [showOptions, setShowOptions] = useState(false);
-  const [viewOpt, setViewOpt] = useState({
-    showSibsung: true, // 십성(천간 라벨 + 지지 십성 줄)
-    showTwelve: true, // 12운성 줄
-    showOhaeng: true, // 오행 분포 카드
-    showHidden: false, // 지장간
-    showHiddenSibsung: false, // 지장간 십성
-    showRelations: false, // 형·충·파·합 관계표
-  });
 
   // --- [API 호출 핸들러] ---
   async function handleSubmit(e: React.FormEvent) {
@@ -330,7 +335,7 @@ export default function ProSajuPage() {
         }),
       });
 
-      const engineJson: EngineResponse = await engineRes.json();
+      const engineJson = await engineRes.json();
       setEngineResult(engineJson.result || null);
 
       setIsFormOpen(false);
@@ -382,9 +387,51 @@ export default function ProSajuPage() {
   // 오행 개수
   const five = hasResult && engineResult ? countFiveElements(engineResult.ganji) : null;
 
-  const relations = engineResult?.relations;
-  const hidden = engineResult?.hiddenStems;
-  const hiddenSibsung = engineResult?.hiddenSibsung;
+  // 지장간 + 신살 카드용 데이터
+  let pillarExtra: Record<
+    PillarKey,
+    { hidden: string[]; shinsal: string[] }
+  > | null = null;
+
+  if (hasResult && engineResult) {
+    pillarExtra = {
+      hour: {
+        hidden: getHiddenStemsByBranch(engineResult.ganji.hour[1]),
+        shinsal: getDemoShinsal(
+          engineResult.ganji.hour[0],
+          engineResult.ganji.hour[1]
+        ),
+      },
+      day: {
+        hidden: getHiddenStemsByBranch(engineResult.ganji.day[1]),
+        shinsal: getDemoShinsal(
+          engineResult.ganji.day[0],
+          engineResult.ganji.day[1]
+        ),
+      },
+      month: {
+        hidden: getHiddenStemsByBranch(engineResult.ganji.month[1]),
+        shinsal: getDemoShinsal(
+          engineResult.ganji.month[0],
+          engineResult.ganji.month[1]
+        ),
+      },
+      year: {
+        hidden: getHiddenStemsByBranch(engineResult.ganji.year[1]),
+        shinsal: getDemoShinsal(
+          engineResult.ganji.year[0],
+          engineResult.ganji.year[1]
+        ),
+      },
+    };
+  }
+
+  const pillarLabel: Record<PillarKey, string> = {
+    hour: "시주",
+    day: "일주",
+    month: "월주",
+    year: "년주",
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center font-sans text-gray-900 select-none">
@@ -405,97 +452,6 @@ export default function ProSajuPage() {
           <div className="bg-red-50 text-red-700 text-xs px-4 py-2 border-b border-red-100">
             {error}
           </div>
-        )}
-
-        {/* 옵션 패널 토글 (결과 있을 때만) */}
-        {hasResult && !isFormOpen && (
-          <>
-            <div className="bg-white px-4 py-2 border-b flex justify-between items-center">
-              <span className="font-semibold text-sm">표시 옵션</span>
-              <button
-                onClick={() => setShowOptions(!showOptions)}
-                className="text-xs bg-gray-200 px-3 py-1 rounded hover:bg-gray-300 transition"
-              >
-                {showOptions ? "닫기 ▲" : "열기 ▼"}
-              </button>
-            </div>
-
-            {showOptions && (
-              <div className="bg-gray-50 border-b px-4 py-2 grid grid-cols-2 gap-2 text-sm">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={viewOpt.showSibsung}
-                    onChange={() =>
-                      setViewOpt((v) => ({ ...v, showSibsung: !v.showSibsung }))
-                    }
-                  />
-                  십성 / 지지 십성
-                </label>
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={viewOpt.showTwelve}
-                    onChange={() =>
-                      setViewOpt((v) => ({ ...v, showTwelve: !v.showTwelve }))
-                    }
-                  />
-                  12운성
-                </label>
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={viewOpt.showOhaeng}
-                    onChange={() =>
-                      setViewOpt((v) => ({ ...v, showOhaeng: !v.showOhaeng }))
-                    }
-                  />
-                  오행 분포
-                </label>
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={viewOpt.showHidden}
-                    onChange={() =>
-                      setViewOpt((v) => ({ ...v, showHidden: !v.showHidden }))
-                    }
-                  />
-                  지장간
-                </label>
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={viewOpt.showHiddenSibsung}
-                    onChange={() =>
-                      setViewOpt((v) => ({
-                        ...v,
-                        showHiddenSibsung: !v.showHiddenSibsung,
-                      }))
-                    }
-                  />
-                  지장간 십성
-                </label>
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={viewOpt.showRelations}
-                    onChange={() =>
-                      setViewOpt((v) => ({
-                        ...v,
-                        showRelations: !v.showRelations,
-                      }))
-                    }
-                  />
-                  형·충·파·합 관계표
-                </label>
-              </div>
-            )}
-          </>
         )}
 
         {/* 입력 폼 */}
@@ -628,11 +584,9 @@ export default function ProSajuPage() {
                       className="py-2 flex flex-col items-center border-r last:border-r-0 border-gray-100"
                     >
                       {/* 십성 라벨 */}
-                      {viewOpt.showSibsung && (
-                        <span className="mb-1 text-sm font-bold text-indigo-700">
-                          {ganSibsung}
-                        </span>
-                      )}
+                      <span className="mb-1 text-sm font-bold text-indigo-700">
+                        {ganSibsung}
+                      </span>
 
                       {/* 천간 박스 */}
                       <div
@@ -679,109 +633,42 @@ export default function ProSajuPage() {
               </div>
 
               {/* 3줄: 지지 십성 */}
-              {viewOpt.showSibsung && (
-                <div className="grid grid-cols-4 border-b border-gray-100 bg-white">
-                  {COLS.map((col) => {
-                    const jiSibsung = engineResult.branchSibsung?.[col] || "-";
-                    return (
-                      <div
-                        key={`ji-sibsung-${col}`}
-                        className="py-1.5 flex items-center justify-center border-r last:border-r-0 border-gray-100"
-                      >
-                        <span className="text-sm font-semibold text-blue-600">
-                          {jiSibsung}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <div className="grid grid-cols-4 border-b border-gray-100 bg-white">
+                {COLS.map((col) => {
+                  const jiSibsung = engineResult.branchSibsung?.[col] || "-";
+                  return (
+                    <div
+                      key={`ji-sibsung-${col}`}
+                      className="py-1.5 flex items-center justify-center border-r last:border-r-0 border-gray-100"
+                    >
+                      <span className="text-sm font-semibold text-blue-600">
+                        {jiSibsung}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
 
               {/* 4줄: 12운성 */}
-              {viewOpt.showTwelve && (
-                <div className="grid grid-cols-4 bg-white">
-                  {COLS.map((col) => {
-                    const star = engineResult.twelve?.[col] || "-";
-                    return (
-                      <div
-                        key={`twelve-${col}`}
-                        className="py-1.5 flex items-center justify-center border-r last:border-r-0 border-gray-100"
-                      >
-                        <span className="inline-block px-2 py-0.5 rounded-full bg-indigo-600 text-white text-sm font-semibold">
-                          {star}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <div className="grid grid-cols-4 bg-white">
+                {COLS.map((col) => {
+                  const star = engineResult.twelve?.[col] || "-";
+                  return (
+                    <div
+                      key={`twelve-${col}`}
+                      className="py-1.5 flex items-center justify-center border-r last:border-r-0 border-gray-100"
+                    >
+                      <span className="inline-block px-2 py-0.5 rounded-full bg-indigo-600 text-white text-sm font-semibold">
+                        {star}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* 지장간 */}
-            {viewOpt.showHidden && hidden && (
-              <div className="mx-2 mb-2 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-                <div className="bg-gray-50 text-center py-1 border-b text-sm font-bold text-gray-700">
-                  지장간
-                </div>
-                <div className="grid grid-cols-4 bg-white">
-                  {COLS.map((col) => {
-                    const list = hidden[col] || [];
-                    return (
-                      <div
-                        key={`hidden-${col}`}
-                        className="py-2 px-1 border-r last:border-r-0 border-gray-100 flex flex-col items-center text-sm"
-                      >
-                        {list.length === 0 ? (
-                          <span className="text-gray-300">-</span>
-                        ) : (
-                          list.map((hs, idx) => (
-                            <span key={idx} className="leading-tight">
-                              {hs}
-                            </span>
-                          ))
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* 지장간 십성 */}
-            {viewOpt.showHiddenSibsung && hiddenSibsung && (
-              <div className="mx-2 mb-2 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-                <div className="bg-gray-50 text-center py-1 border-b text-sm font-bold text-gray-700">
-                  지장간 십성
-                </div>
-                <div className="grid grid-cols-4 bg-white">
-                  {COLS.map((col) => {
-                    const list = hiddenSibsung[col] || [];
-                    return (
-                      <div
-                        key={`hidden-sibsung-${col}`}
-                        className="py-2 px-1 border-r last:border-r-0 border-gray-100 flex flex-col items-center text-sm"
-                      >
-                        {list.length === 0 ? (
-                          <span className="text-gray-300">-</span>
-                        ) : (
-                          list.map((hs, idx) => (
-                            <span
-                              key={idx}
-                              className="leading-tight text-blue-700"
-                            >
-                              {hs}
-                            </span>
-                          ))
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             {/* 오행 분포 */}
-            {viewOpt.showOhaeng && five && (
+            {five && (
               <div className="mx-2 mb-3 bg-white rounded-lg p-3 border shadow-sm">
                 <div className="text-sm font-bold text-gray-700 mb-2">
                   오행 분포
@@ -796,80 +683,70 @@ export default function ProSajuPage() {
               </div>
             )}
 
-            {/* 형·충·파·합 관계표 */}
-            {viewOpt.showRelations && relations && (
-              <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm overflow-hidden">
-                <div className="bg-amber-100 text-center py-1 border-b text-sm font-bold text-gray-800">
-                  형·충·파·합 관계표
+            {/* 지장간 + 신살 카드 (C안, 뱃지 스타일) */}
+            {pillarExtra && (
+              <div className="mx-2 mb-3 bg-white rounded-lg p-3 border shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-gray-700">
+                    지장간 · 신살
+                  </span>
+                  <span className="text-[11px] text-gray-400">
+                    (데모: 도화·역마·화개 먼저 적용)
+                  </span>
                 </div>
-                <div className="grid grid-cols-4 text-xs">
-                  {/* 형 */}
-                  <div className="border-r border-gray-200 p-2">
-                    <div className="font-bold text-red-600 mb-1 text-center">
-                      형
-                    </div>
-                    {relations.hyung.length === 0 ? (
-                      <div className="text-gray-300 text-center">-</div>
-                    ) : (
-                      relations.hyung.map((r, i) => (
-                        <div key={i} className="leading-tight mb-0.5">
-                          {PILLAR_LABEL[r.from]}-{PILLAR_LABEL[r.to]}{" "}
-                          ({r.branches})
-                        </div>
-                      ))
-                    )}
-                  </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  {(["year", "month", "day", "hour"] as PillarKey[]).map(
+                    (key) => {
+                      const extra = pillarExtra![key];
+                      return (
+                        <div
+                          key={key}
+                          className="border rounded-lg p-2 bg-slate-50 flex flex-col gap-1"
+                        >
+                          {/* 주 라벨 */}
+                          <div className="text-[11px] font-semibold text-gray-600 text-center mb-1">
+                            {pillarLabel[key]}
+                          </div>
 
-                  {/* 충 */}
-                  <div className="border-r border-gray-200 p-2">
-                    <div className="font-bold text-orange-600 mb-1 text-center">
-                      충
-                    </div>
-                    {relations.chung.length === 0 ? (
-                      <div className="text-gray-300 text-center">-</div>
-                    ) : (
-                      relations.chung.map((r, i) => (
-                        <div key={i} className="leading-tight mb-0.5">
-                          {PILLAR_LABEL[r.from]}-{PILLAR_LABEL[r.to]}{" "}
-                          ({r.branches})
-                        </div>
-                      ))
-                    )}
-                  </div>
+                          {/* 지장간 뱃지들 */}
+                          <div className="min-h-[22px] flex flex-wrap gap-1 justify-center">
+                            {extra.hidden.length ? (
+                              extra.hidden.map((h) => (
+                                <span
+                                  key={h}
+                                  className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-100 text-[11px] font-semibold text-amber-800 border border-amber-200"
+                                >
+                                  {h}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-[11px] text-gray-400">
+                                지장간 없음
+                              </span>
+                            )}
+                          </div>
 
-                  {/* 파 */}
-                  <div className="border-r border-gray-200 p-2">
-                    <div className="font-bold text-blue-600 mb-1 text-center">
-                      파
-                    </div>
-                    {relations.pa.length === 0 ? (
-                      <div className="text-gray-300 text-center">-</div>
-                    ) : (
-                      relations.pa.map((r, i) => (
-                        <div key={i} className="leading-tight mb-0.5">
-                          {PILLAR_LABEL[r.from]}-{PILLAR_LABEL[r.to]}{" "}
-                          ({r.branches})
+                          {/* 신살 뱃지들 */}
+                          <div className="min-h-[22px] flex flex-wrap gap-1 justify-center">
+                            {extra.shinsal.length ? (
+                              extra.shinsal.map((s) => (
+                                <span
+                                  key={s}
+                                  className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-indigo-50 text-[11px] font-semibold text-indigo-700 border border-indigo-200"
+                                >
+                                  {s}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-[11px] text-gray-400">
+                                신살 없음
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      ))
-                    )}
-                  </div>
-
-                  {/* 합 */}
-                  <div className="p-2">
-                    <div className="font-bold text-green-600 mb-1 text-center">
-                      합
-                    </div>
-                    {relations.hap.length === 0 ? (
-                      <div className="text-gray-300 text-center">-</div>
-                    ) : (
-                      relations.hap.map((r, i) => (
-                        <div key={i} className="leading-tight mb-0.5">
-                          {PILLAR_LABEL[r.from]}-{PILLAR_LABEL[r.to]}{" "}
-                          ({r.branches})
-                        </div>
-                      ))
-                    )}
-                  </div>
+                      );
+                    }
+                  )}
                 </div>
               </div>
             )}
