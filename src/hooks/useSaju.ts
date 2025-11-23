@@ -1,4 +1,4 @@
-console.log("📤 엔진으로 보낸 값:", enginePayload);
+// console.log("📤 엔진으로 보낸 값:", enginePayload);
 
 // src/hooks/useSaju.ts
 import { useState } from "react";
