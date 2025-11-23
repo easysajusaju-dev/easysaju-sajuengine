@@ -457,14 +457,27 @@ export default function ProSajuPage() {
       <div className="w-full max-w-md bg-white shadow-xl min-h-screen md:min-h-0 md:h-auto md:my-5 md:rounded-xl overflow-hidden">
         {/* 헤더 */}
         <header className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center shadow sticky top-0 z-10">
-          <h1 className="font-bold text-lg">이지사주 만세력 Pro</h1>
-          <button
-            onClick={() => setIsFormOpen(!isFormOpen)}
-            className="text-xs bg-white/20 px-3 py-1 rounded hover:bg-white/30 transition"
-          >
-            {isFormOpen ? "닫기" : "입력 열기"}
-          </button>
-        </header>
+
+  {/* 왼쪽 로고 */}
+  <div className="flex items-center gap-2">
+    <img 
+      src="https://easysajusaju-dev.github.io/logo_remove_white.png" 
+      alt="이지사주 로고" 
+      className="h-7 w-auto object-contain"
+    />
+    <span className="font-bold text-lg">만세력 Pro</span>
+  </div>
+
+  {/* 오른쪽 버튼 */}
+  <button
+    onClick={() => setIsFormOpen(!isFormOpen)}
+    className="text-xs bg-white/20 px-3 py-1 rounded hover:bg-white/30 transition"
+  >
+    {isFormOpen ? "닫기" : "입력 열기"}
+  </button>
+
+</header>
+
 
         {/* 에러 메시지 */}
         {error && (
