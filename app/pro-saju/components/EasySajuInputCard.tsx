@@ -41,7 +41,7 @@ export default function EasySajuInputCard({ onSubmit, loading }: any) {
         <div className="relative z-10 p-4 text-white">
           <p className="text-sm opacity-90">당신의 운명을 풀어내는 곳</p>
           <h2 className="text-3xl font-bold mt-1">이지사주</h2>
-          <p className="text-base opacity-95">만세력 조회</p>
+          <p className="text-base opacity-95">생년월일시등 정보를 입력하세요</p>
         </div>
       </div>
 
