@@ -40,7 +40,7 @@ export default function EasySajuInputCard({ onSubmit, loading }: any) {
       {/* ====== 배너 ====== */}
       <div className="relative h-40 w-full mb-6">
         <img
-          src="/images/card-individual.png"
+          src="https://easysajusaju-dev.github.io/images/card-individual.png"
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#1d2b50b3] to-[#2c3e5080]" />
