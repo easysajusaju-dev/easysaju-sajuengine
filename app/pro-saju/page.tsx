@@ -81,6 +81,8 @@ interface EngineResponse {
       startAge: number;
     };
     relations?: Relations;
+    // 서버 result 안에 sinsal 도 같이 들어옴 (any 로 처리)
+    sinsal?: any;
   };
   error?: string;
 }
@@ -103,7 +105,7 @@ function getOhaengStyles(char: string) {
   const water = "임계해자壬癸亥子";
 
   if (water.includes(char))
-    return { bg: "bg-teal-400", border: "border-teal-600" }; // 수(水) → 물색
+    return { bg: "bg-teal-400", border: "border-teal-600" }; // 수(水)
   if (wood.includes(char))
     return { bg: "bg-green-400", border: "border-green-700" };
   if (fire.includes(char))
@@ -205,7 +207,6 @@ function countFiveElements(ganji: { [key: string]: string }) {
 }
 
 // --- 지장간 계산용 테이블 ---
-// (한글/한자 지지 → 한자 지지)
 const BRANCH_NORMALIZE: Record<string, string> = {
   자: "子",
   축: "丑",
@@ -237,7 +238,7 @@ function normBranch(ch: string) {
   return BRANCH_NORMALIZE[ch] ?? ch;
 }
 
-// 지장간 표 (표준 3개 풀세트)
+// 지장간 표
 const HIDDEN_STEMS_BY_BRANCH: Record<string, string[]> = {
   子: ["癸"],
   丑: ["己", "癸", "辛"],
@@ -413,12 +414,15 @@ export default function ProSajuPage() {
   }
 
   // 선택된 년도의 월운
-  const selectedYearGanjiHangul = hasResult ? getGanjiByYear(selectedYear) : "갑자";
+  const selectedYearGanjiHangul = hasResult
+    ? getGanjiByYear(selectedYear)
+    : "갑자";
   const selectedYearStem = selectedYearGanjiHangul[0];
   const wolunList = hasResult ? getMonthlyGanjiList(selectedYearStem) : [];
 
   // 오행 개수
-  const five = hasResult && engineResult ? countFiveElements(engineResult.ganji) : null;
+  const five =
+    hasResult && engineResult ? countFiveElements(engineResult.ganji) : null;
 
   // 지장간
   const hidden =
@@ -430,8 +434,8 @@ export default function ProSajuPage() {
           hour: getJijanggan(engineResult.ganji.hour[1]),
         }
       : null;
-  
-   // 신살
+
+  // 🔥 신살 (백엔드에서 내려준 값 사용)
   const sinsal =
     hasResult && engineResult && (engineResult as any).sinsal
       ? (engineResult as any).sinsal
@@ -589,7 +593,9 @@ export default function ProSajuPage() {
                   const [stem] = engineResult.ganji[col].split("");
                   const sStyle = getOhaengStyles(stem);
                   const ganSibsung =
-                    col === "day" ? "일간(나)" : engineResult.sibsung?.[col] || "-";
+                    col === "day"
+                      ? "일간(나)"
+                      : engineResult.sibsung?.[col] || "-";
 
                   return (
                     <div
@@ -773,44 +779,49 @@ export default function ProSajuPage() {
                     )
                   )}
                 </div>
+              </div>
+            )}
 
-            {/* 신살 */}
-{viewOptions.hidden && sinsal && (
-  <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
-    <div className="flex justify-between items-center px-3 py-2 border-b bg-indigo-50">
-      <span className="text-sm font-bold text-gray-800">신살</span>
-      <span className="text-[11px] text-gray-500">원국 기준</span>
-    </div>
-
-    <div className="grid grid-cols-4 text-center text-xs font-bold text-gray-600 border-b py-2">
-      <div>년주</div>
-      <div>월주</div>
-      <div>일주</div>
-      <div>시주</div>
-    </div>
-
-    <div className="grid grid-cols-4 text-center text-sm py-2">
-      {["year", "month", "day", "hour"].map((key) => (
-        <div key={key} className="border-r last:border-r-0 px-1">
-          {sinsal[key] && sinsal[key].length > 0 ? (
-            <div className="space-y-0.5">
-              {sinsal[key].map((s: string, idx: number) => (
-                <div
-                  key={idx}
-                  className="text-[12px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded"
-                >
-                  {s}
+            {/* 🔥 신살 카드 */}
+            {viewOptions.hidden && sinsal && (
+              <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
+                <div className="flex justify-between items-center px-3 py-2 border-b bg-indigo-50">
+                  <span className="text-sm font-bold text-gray-800">신살</span>
+                  <span className="text-[11px] text-gray-500">원국 기준</span>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-gray-400 text-xs">없음</div>
-          )}
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+
+                <div className="grid grid-cols-4 text-center text-xs font-bold text-gray-600 border-b py-2">
+                  <div>년주</div>
+                  <div>월주</div>
+                  <div>일주</div>
+                  <div>시주</div>
+                </div>
+
+                <div className="grid grid-cols-4 text-center text-sm py-2">
+                  {(["year", "month", "day", "hour"] as BranchKey[]).map(
+                    (key) => (
+                      <div
+                        key={key}
+                        className="border-r last:border-r-0 px-1 space-y-0.5"
+                      >
+                        {sinsal[key] && sinsal[key].length > 0 ? (
+                          sinsal[key].map((s: string, idx: number) => (
+                            <div
+                              key={idx}
+                              className="text-[12px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded"
+                            >
+                              {s}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-gray-400 text-xs">없음</div>
+                        )}
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* 형·충·파·합 관계표 */}
             {viewOptions.relations && engineResult.relations && (
