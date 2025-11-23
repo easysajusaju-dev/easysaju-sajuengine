@@ -121,7 +121,7 @@ function getOhaengStyles(ch: string) {
   if ("경신신유庚辛申酉".includes(ch))
     return { bg: "bg-slate-200", border: "border-slate-400" };
   if ("임계해자壬癸亥子".includes(ch))
-    return { bg: "bg-sky-400", border: "border-sky-700" };
+    return { bg: "bg-sky-400", border: "border-sky-700" }; // 수(水) → 하늘색
   return { bg: "bg-gray-200", border: "border-gray-300" };
 }
 
@@ -154,6 +154,7 @@ export default function ProSajuPage() {
   const [engineResult, setEngineResult] =
     useState<EngineResponse["result"] | null>(null);
 
+  // 만세력 서버는 이름을 안 주니까, 프론트에서 저장
   const [userName, setUserName] = useState("");
 
   const seunRef = useRef<HTMLDivElement>(null);
@@ -174,7 +175,7 @@ export default function ProSajuPage() {
 
   // ---- handleSubmit ----
   async function handleSubmit(formData: {
-    gender: "M" | "F";
+    gender: Gender;
     name: string;
     birthdate: string;
     birthtime: string;
@@ -196,6 +197,7 @@ export default function ProSajuPage() {
         unknownTime,
       } = formData;
 
+      // 이름 저장
       setUserName(name);
 
       if (birthdate.length !== 8)
@@ -237,9 +239,7 @@ export default function ProSajuPage() {
 
       setDebugData(debugJson);
 
-      // 엔진 요청
       const f = debugJson.finalResult;
-
       const birthIso = `${
         debugJson.timeCalc.birthAdjusted ||
         debugJson.timeCalc.originalBirth
@@ -280,6 +280,7 @@ export default function ProSajuPage() {
       setLoading(false);
     }
   }
+
   const hasResult = !!(debugData && engineResult);
 
   const currentYear = new Date().getFullYear();
@@ -343,7 +344,7 @@ export default function ProSajuPage() {
       hour: "시",
     }[r.to]} (${r.branches})`;
 
-  // 세운 자동스크롤
+  // 세운 자동 스크롤
   useEffect(() => {
     if (engineResult && seunRef.current) {
       setTimeout(() => {
@@ -362,7 +363,6 @@ export default function ProSajuPage() {
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center text-gray-900 select-none font-sans">
       <div className="w-full max-w-md bg-white shadow-xl min-h-screen md:min-h-0 md:h-auto md:my-5 md:rounded-xl overflow-hidden">
-
         {/* 헤더 */}
         <header className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center shadow sticky top-0 z-10">
           <div className="flex items-center gap-2">
@@ -393,412 +393,472 @@ export default function ProSajuPage() {
         {isFormOpen && (
           <EasySajuInputCard onSubmit={handleSubmit} loading={loading} />
         )}
-{/* 결과 화면 */}
-{hasResult && !isFormOpen && engineResult && debugData && (
-  <main className="bg-slate-50 pb-20">
 
-    {/* 요약 카드 (성별 아이콘 적용) */}
-    <div className="bg-white p-5 border-b border-gray-200 shadow-sm mb-3">
-      <div className="flex items-center gap-3">
+        {/* 결과 화면 */}
+        {hasResult && !isFormOpen && engineResult && debugData && (
+          <main className="bg-slate-50 pb-20">
+            {/* 요약 카드 (성별 아이콘 적용) */}
+            <div className="bg-white p-5 border-b border-gray-200 shadow-sm mb-3">
+              <div className="flex items-center gap-3">
+                {/* 성별 아이콘 */}
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center shadow ${
+                    debugData.input.isMale ? "bg-blue-100" : "bg-pink-100"
+                  }`}
+                >
+                  <img
+                    src={
+                      debugData.input.isMale
+                        ? "/gender/male.png"
+                        : "/gender/female.png"
+                    }
+                    className="w-7 h-7"
+                    alt="gender"
+                  />
+                </div>
 
-        {/* 성별 아이콘 */}
-        <div
-          className={`w-12 h-12 rounded-full flex items-center justify-center shadow ${
-            debugData.input.isMale ? "bg-blue-100" : "bg-pink-100"
-          }`}
-        >
-          <img
-            src={
-              debugData.input.isMale
-                ? "/gender/male.png"
-                : "/gender/female.png"
-            }
-            className="w-7 h-7"
-            alt="gender"
-          />
-        </div>
-
-        {/* 이름 + 성별 + 나이 */}
-        <div className="flex flex-col">
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold">
-              {debugData.input.name}
-            </span>
-            <span className="text-sm text-gray-600">
-              {debugData.input.isMale ? "남" : "여"}, {koreanAge}세
-            </span>
-          </div>
-
-          <div className="text-xs text-gray-400">
-            (양) {debugData.finalResult.solarText} / (음){" "}
-            {debugData.finalResult.lunarText}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    {/* ---------------- 원국 카드 ---------------- */}
-    <div className="mx-2 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-3">
-
-      {/* 타이틀 */}
-      <div className="grid grid-cols-4 bg-gray-50 text-center font-bold py-2 border-b">
-        <div>시주</div>
-        <div>일주</div>
-        <div>월주</div>
-        <div>년주</div>
-      </div>
-
-      {/* 천간 */}
-      <div className="grid grid-cols-4 border-b bg-white">
-        {COLS.map((col) => {
-          const stem = engineResult.ganji[col][0];
-          const s = getOhaengStyles(stem);
-
-          return (
-            <div
-              key={col}
-              className="py-2 flex flex-col items-center border-r last:border-r-0"
-            >
-              <span className="text-sm text-indigo-700 font-bold mb-1">
-                {col === "day"
-                  ? "일간(나)"
-                  : engineResult.sibsung[col]}
-              </span>
-              <div
-                className={`w-full max-w-[90px] aspect-square flex items-center justify-center text-[2.3rem] rounded shadow-sm border ${s.bg} ${s.border}`}
-              >
-                {stem}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* 지지 */}
-      <div className="grid grid-cols-4 border-b bg-white">
-        {COLS.map((col) => {
-          const ji = engineResult.ganji[col][1];
-          const s = getOhaengStyles(ji);
-
-          return (
-            <div
-              key={col}
-              className="py-2 flex justify-center border-r last:border-r-0"
-            >
-              <div
-                className={`w-full max-w-[90px] aspect-square flex items-center justify-center text-[2.3rem] rounded shadow-sm border ${s.bg} ${s.border}`}
-              >
-                {ji}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* 지지 십성 */}
-      <div className="grid grid-cols-4 border-b bg-white">
-        {COLS.map((col) => (
-          <div
-            key={col}
-            className="py-1.5 text-center text-blue-600 text-sm font-semibold border-r last:border-r-0"
-          >
-            {engineResult.branchSibsung[col]}
-          </div>
-        ))}
-      </div>
-
-      {/* 12운성 */}
-      <div className="grid grid-cols-4 bg-white">
-        {COLS.map((col) => (
-          <div
-            key={col}
-            className="py-1.5 text-center border-r last:border-r-0"
-          >
-            <span className="px-2 py-0.5 bg-indigo-600 text-white text-sm font-semibold rounded-full">
-              {engineResult.twelve[col]}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    {/* ---------------- 오행 분포 ---------------- */}
-    {viewOptions.five && five && (
-      <div className="mx-2 mb-3 bg-white rounded-lg p-3 border shadow-sm">
-        <div className="font-bold text-gray-700 text-sm mb-2">
-          오행 분포
-        </div>
-        <div className="flex justify-between text-sm font-semibold">
-          <span>목(木) {five.목}</span>
-          <span>화(火) {five.화}</span>
-          <span>토(土) {five.토}</span>
-          <span>금(金) {five.금}</span>
-          <span>수(水) {five.수}</span>
-        </div>
-      </div>
-    )}
-
-    {/* ---------------- 지장간 ---------------- */}
-    {viewOptions.hidden && hidden && (
-      <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
-        <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
-          <span className="font-bold text-sm">지장간</span>
-          <span className="text-[11px] text-gray-500">(지장간 먼저 표시)</span>
-        </div>
-
-        <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
-          <div>년주</div>
-          <div>월주</div>
-          <div>일주</div>
-          <div>시주</div>
-        </div>
-
-        <div className="grid grid-cols-4 text-center py-2 text-sm">
-          {[hidden.year, hidden.month, hidden.day, hidden.hour].map(
-            (arr, idx) => (
-              <div key={idx} className="border-r last:border-r-0">
-                {arr.length === 0 ? (
-                  <div className="text-gray-400 text-xs">없음</div>
-                ) : (
-                  <div className="space-y-0.5 font-bold">
-                    {arr.join(" ")}
+                {/* 이름 + 성별 + 나이 */}
+                <div className="flex flex-col">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold">
+                      {userName || debugData.input.name || "이름"}
+                    </span>
+                    <span className="text-sm text-gray-600">
+                      {debugData.input.isMale ? "남" : "여"}, {koreanAge}세
+                    </span>
                   </div>
-                )}
-              </div>
-            )
-          )}
-        </div>
-      </div>
-    )}
 
-    {/* ---------------- 신살 ---------------- */}
-    {viewOptions.hidden && sinsal && (
-      <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
-        <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
-          <span className="font-bold text-sm">신살</span>
-          <span className="text-[11px] text-gray-500">원국 기준</span>
-        </div>
-
-        <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
-          <div>년</div>
-          <div>월</div>
-          <div>일</div>
-          <div>시</div>
-        </div>
-
-        <div className="grid grid-cols-4 text-center py-2">
-          {["year", "month", "day", "hour"].map((key) => (
-            <div key={key} className="border-r last:border-r-0">
-              {sinsal[key] && sinsal[key].length > 0 ? (
-                sinsal[key].map((s: string, idx: number) => (
-                  <div
-                    key={idx}
-                    className="text-[12px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 mb-1 rounded"
-                  >
-                    {s}
+                  <div className="text-xs text-gray-400">
+                    (양) {debugData.finalResult.solarText} / (음){" "}
+                    {debugData.finalResult.lunarText}
                   </div>
-                ))
-              ) : (
-                <div className="text-gray-400 text-xs">없음</div>
-              )}
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
-    )}
 
-    {/* ---------------- 형·충·파·합 ---------------- */}
-    {viewOptions.relations && engineResult.relations && (
-      <div className="mx-2 mb-3 bg-yellow-50 rounded-lg border border-yellow-200 shadow-sm">
-        <div className="px-3 py-1.5 border-b flex justify-between">
-          <span className="font-bold text-sm">형·충·파·합</span>
-          <span className="text-[11px] text-gray-500">원국 기준</span>
-        </div>
+            {/* 원국 카드 */}
+            <div className="mx-2 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-3">
+              <div className="grid grid-cols-4 bg-gray-50 text-center font-bold py-2 border-b">
+                <div>시주</div>
+                <div>일주</div>
+                <div>월주</div>
+                <div>년주</div>
+              </div>
 
-        <div className="grid grid-cols-4 text-center py-1 text-xs font-bold text-gray-700">
-          <div>형</div>
-          <div>충</div>
-          <div>파</div>
-          <div>합</div>
-        </div>
+              {/* 천간 */}
+              <div className="grid grid-cols-4 border-b bg-white">
+                {COLS.map((col) => {
+                  const stem = engineResult.ganji[col][0];
+                  const s = getOhaengStyles(stem);
 
-        <div className="grid grid-cols-4 text-center pb-2 text-[11px]">
-          {["hyung", "chung", "pa", "hap"].map((k) => (
-            <div key={k} className="border-l first:border-l-0 border-yellow-200 px-2">
-              {(engineResult.relations as any)[k]?.length > 0 ? (
-                (engineResult.relations as any)[k].map(
-                  (r: RelationItem, i: number) => (
-                    <div key={i} className="py-0.5">
-                      <span className="bg-white px-1.5 py-0.5 rounded border border-yellow-300">
-                        {formatR(r)}
+                  return (
+                    <div
+                      key={col}
+                      className="py-2 flex flex-col items-center border-r last:border-r-0"
+                    >
+                      <span className="text-sm text-indigo-700 font-bold mb-1">
+                        {col === "day"
+                          ? "일간(나)"
+                          : engineResult.sibsung[col]}
                       </span>
+                      <div
+                        className={`w-full max-w-[90px] aspect-square flex items-center justify-center text-[2.3rem] rounded shadow-sm border ${s.bg} ${s.border}`}
+                      >
+                        {stem}
+                      </div>
                     </div>
-                  )
-                )
-              ) : (
-                <div className="text-gray-400 py-1">-</div>
-              )}
+                  );
+                })}
+              </div>
+
+              {/* 지지 */}
+              <div className="grid grid-cols-4 border-b bg-white">
+                {COLS.map((col) => {
+                  const ji = engineResult.ganji[col][1];
+                  const s = getOhaengStyles(ji);
+
+                  return (
+                    <div
+                      key={col}
+                      className="py-2 flex justify-center border-r last:border-r-0"
+                    >
+                      <div
+                        className={`w-full max-w-[90px] aspect-square flex items-center justify-center text-[2.3rem] rounded shadow-sm border ${s.bg} ${s.border}`}
+                      >
+                        {ji}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 지지 십성 */}
+              <div className="grid grid-cols-4 border-b bg-white">
+                {COLS.map((col) => (
+                  <div
+                    key={col}
+                    className="py-1.5 text-center text-blue-600 text-sm font-semibold border-r last:border-r-0"
+                  >
+                    {engineResult.branchSibsung[col]}
+                  </div>
+                ))}
+              </div>
+
+              {/* 12운성 */}
+              <div className="grid grid-cols-4 bg-white">
+                {COLS.map((col) => (
+                  <div
+                    key={col}
+                    className="py-1.5 text-center border-r last:border-r-0"
+                  >
+                    <span className="px-2 py-0.5 bg-indigo-600 text-white text-sm font-semibold rounded-full">
+                      {engineResult.twelve[col]}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
-    )}
 
-    {/* ---------------- 대운 ---------------- */}
-    <div className="mx-2 mb-3">
-      <div className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-t-lg flex justify-between">
-        <span>대운 (대운수: {debugData.finalResult.daeNum})</span>
-        <span>
-          {engineResult.daewoon.direction === "forward" ? "순행" : "역행"}
-        </span>
-      </div>
-
-      <div className="bg-white border border-gray-200 rounded-b-lg px-2 py-1 overflow-x-auto">
-        <div className="flex gap-1 min-w-[360px]">
-          {debugData.finalResult.daeWoonYear.map(
-            (startYear: number, i: number) => {
-              const age = debugData.finalResult.daeNum + i * 10;
-              const isCur = koreanAge >= age && koreanAge < age + 10;
-
-              const [s, b] =
-                debugData.finalResult.daeWoonGanji[i].split("");
-
-              const sS = getOhaengStyles(s);
-              const bS = getOhaengStyles(b);
-
-              return (
-                <div
-                  key={i}
-                  className={`flex flex-col items-center px-1 py-0.5 rounded-lg ${
-                    isCur
-                      ? "ring-2 ring-blue-500 bg-blue-50 scale-105 shadow-md"
-                      : "hover:bg-gray-50"
-                  }`}
-                >
-                  <span
-                    className={`text-[12px] font-bold mb-1 ${
-                      isCur ? "text-blue-700" : "text-gray-400"
-                    }`}
-                  >
-                    {age}
-                  </span>
-
-                  <div
-                    className={`w-10 h-10 flex items-center justify-center text-xl border rounded ${sS.bg} ${sS.border}`}
-                  >
-                    {s}
-                  </div>
-                  <div
-                    className={`w-10 h-10 flex items-center justify-center text-xl border rounded mt-1 ${bS.bg} ${bS.border}`}
-                  >
-                    {b}
-                  </div>
-                </div>
-              );
-            }
-          )}
-        </div>
-      </div>
-    </div>
-
-    {/* ---------------- 세운 ---------------- */}
-    <div className="mx-2 mb-3">
-      <div className="bg-gray-800 text-white text-xs font-bold px-3 py-1 rounded-t-lg">
-        세운 (년운) - {selectedYear}년
-      </div>
-
-      <div
-        ref={seunRef}
-        className="bg-white border border-gray-200 rounded-b-lg overflow-x-auto"
-      >
-        <div className="flex px-2 py-1 w-max">
-          {seunList.map((e) => {
-            const isSel = e.year === selectedYear;
-            const [s, b] = e.ganji.split("");
-            const sS = getOhaengStyles(s);
-            const bS = getOhaengStyles(b);
-
-            return (
-              <div
-                key={e.year}
-                id={`year-${e.year}`}
-                onClick={() => setSelectedYear(e.year)}
-                className={`flex flex-col items-center px-1 mx-1 py-1 rounded-lg cursor-pointer ${
-                  isSel
-                    ? "bg-gray-100 ring-2 ring-gray-800 scale-110 shadow-md"
-                    : "hover:bg-gray-50"
-                }`}
-              >
+            {/* 표시 옵션 체크박스 */}
+            <div className="mx-2 mb-3 bg-white rounded-lg border px-3 py-2 flex flex-wrap gap-3">
+              <label className="flex items-center gap-1 text-xs">
+                <input
+                  type="checkbox"
+                  checked={viewOptions.five}
+                  onChange={() => toggleView("five")}
+                  className="w-3 h-3"
+                />
                 <span
-                  className={`text-[12px] font-bold mb-1 ${
-                    isSel ? "text-gray-900" : "text-gray-400"
-                  }`}
+                  className={
+                    viewOptions.five
+                      ? "text-indigo-600 font-semibold"
+                      : "text-gray-400"
+                  }
                 >
-                  {e.year}
+                  오행 분포
                 </span>
+              </label>
 
-                <div
-                  className={`w-10 h-10 flex items-center justify-center text-xl rounded shadow-sm border ${sS.bg} ${sS.border}`}
+              <label className="flex items-center gap-1 text-xs">
+                <input
+                  type="checkbox"
+                  checked={viewOptions.hidden}
+                  onChange={() => toggleView("hidden")}
+                  className="w-3 h-3"
+                />
+                <span
+                  className={
+                    viewOptions.hidden
+                      ? "text-indigo-600 font-semibold"
+                      : "text-gray-400"
+                  }
                 >
-                  {s}
+                  지장간·신살
+                </span>
+              </label>
+
+              <label className="flex items-center gap-1 text-xs">
+                <input
+                  type="checkbox"
+                  checked={viewOptions.relations}
+                  onChange={() => toggleView("relations")}
+                  className="w-3 h-3"
+                />
+                <span
+                  className={
+                    viewOptions.relations
+                      ? "text-indigo-600 font-semibold"
+                      : "text-gray-400"
+                  }
+                >
+                  형·충·파·합
+                </span>
+              </label>
+            </div>
+
+            {/* 오행 분포 */}
+            {viewOptions.five && five && (
+              <div className="mx-2 mb-3 bg-white rounded-lg p-3 border shadow-sm">
+                <div className="font-bold text-gray-700 text-sm mb-2">
+                  오행 분포
                 </div>
-                <div
-                  className={`w-10 h-10 flex items-center justify-center text-xl rounded shadow-sm border mt-1 ${bS.bg} ${bS.border}`}
-                >
-                  {b}
+                <div className="flex justify-between text-sm font-semibold">
+                  <span>목(木) {five.목}</span>
+                  <span>화(火) {five.화}</span>
+                  <span>토(土) {five.토}</span>
+                  <span>금(金) {five.금}</span>
+                  <span>수(水) {five.수}</span>
+                </div>
+              </div>
+            )}
+
+            {/* 지장간 */}
+            {viewOptions.hidden && hidden && (
+              <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
+                <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
+                  <span className="font-bold text-sm">지장간</span>
+                  <span className="text-[11px] text-gray-500">
+                    (지장간 먼저 표시)
+                  </span>
                 </div>
 
-                <span className="text-[12px] text-gray-500 mt-1">
-                  {e.age}세
+                <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
+                  <div>년주</div>
+                  <div>월주</div>
+                  <div>일주</div>
+                  <div>시주</div>
+                </div>
+
+                <div className="grid grid-cols-4 text-center py-2 text-sm">
+                  {[hidden.year, hidden.month, hidden.day, hidden.hour].map(
+                    (arr, idx) => (
+                      <div key={idx} className="border-r last:border-r-0">
+                        {arr.length === 0 ? (
+                          <div className="text-gray-400 text-xs">없음</div>
+                        ) : (
+                          <div className="space-y-0.5 font-bold">
+                            {arr.join(" ")}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 신살 */}
+            {viewOptions.hidden && sinsal && (
+              <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
+                <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
+                  <span className="font-bold text-sm">신살</span>
+                  <span className="text-[11px] text-gray-500">원국 기준</span>
+                </div>
+
+                <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
+                  <div>년</div>
+                  <div>월</div>
+                  <div>일</div>
+                  <div>시</div>
+                </div>
+
+                <div className="grid grid-cols-4 text-center py-2">
+                  {["year", "month", "day", "hour"].map((key) => (
+                    <div key={key} className="border-r last:border-r-0">
+                      {sinsal[key] && sinsal[key].length > 0 ? (
+                        sinsal[key].map((s: string, idx: number) => (
+                          <div
+                            key={idx}
+                            className="text-[12px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 mb-1 rounded"
+                          >
+                            {s}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-gray-400 text-xs">없음</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 형충파합 */}
+            {viewOptions.relations && engineResult.relations && (
+              <div className="mx-2 mb-3 bg-yellow-50 rounded-lg border border-yellow-200 shadow-sm">
+                <div className="px-3 py-1.5 border-b flex justify-between">
+                  <span className="font-bold text-sm">형·충·파·합</span>
+                  <span className="text-[11px] text-gray-500">원국 기준</span>
+                </div>
+
+                <div className="grid grid-cols-4 text-center py-1 text-xs font-bold text-gray-700">
+                  <div>형</div>
+                  <div>충</div>
+                  <div>파</div>
+                  <div>합</div>
+                </div>
+
+                <div className="grid grid-cols-4 text-center pb-2 text-[11px]">
+                  {["hyung", "chung", "pa", "hap"].map((k) => (
+                    <div
+                      key={k}
+                      className="border-l first:border-l-0 border-yellow-200 px-2"
+                    >
+                      {(engineResult.relations as any)[k]?.length > 0 ? (
+                        (engineResult.relations as any)[k].map(
+                          (r: RelationItem, i: number) => (
+                            <div key={i} className="py-0.5">
+                              <span className="bg-white px-1.5 py-0.5 rounded border border-yellow-300">
+                                {formatR(r)}
+                              </span>
+                            </div>
+                          )
+                        )
+                      ) : (
+                        <div className="text-gray-400 py-1">-</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 대운 */}
+            <div className="mx-2 mb-3">
+              <div className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-t-lg flex justify-between">
+                <span>대운 (대운수: {debugData.finalResult.daeNum})</span>
+                <span>
+                  {engineResult.daewoon.direction === "forward"
+                    ? "순행"
+                    : "역행"}
                 </span>
               </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
 
-    {/* ---------------- 월운 ---------------- */}
-    <div className="mx-2 mb-10">
-      <div className="bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-t-lg">
-        월운 ({selectedYear}년)
-      </div>
+              <div className="bg-white border border-gray-200 rounded-b-lg px-2 py-1 overflow-x-auto">
+                <div className="flex gap-1 min-w-[360px]">
+                  {debugData.finalResult.daeWoonYear.map(
+                    (startYear: number, i: number) => {
+                      const age = debugData.finalResult.daeNum + i * 10;
+                      const isCur =
+                        koreanAge >= age && koreanAge < age + 10;
 
-      <div className="bg-white border border-gray-200 rounded-b-lg overflow-x-auto">
-        <div className="flex px-2 py-1 w-max">
-          {wolunList.map((e) => {
-            const [s, b] = e.ganji.split("");
-            const sS = getOhaengStyles(s);
-            const bS = getOhaengStyles(b);
+                      const [s, b] =
+                        debugData.finalResult.daeWoonGanji[i].split("");
 
-            return (
+                      const sS = getOhaengStyles(s);
+                      const bS = getOhaengStyles(b);
+
+                      return (
+                        <div
+                          key={i}
+                          className={`flex flex-col items-center px-1 py-0.5 rounded-lg ${
+                            isCur
+                              ? "ring-2 ring-blue-500 bg-blue-50 scale-105 shadow-md"
+                              : "hover:bg-gray-50"
+                          }`}
+                        >
+                          <span
+                            className={`text-[12px] font-bold mb-1 ${
+                              isCur ? "text-blue-700" : "text-gray-400"
+                            }`}
+                          >
+                            {age}
+                          </span>
+
+                          <div
+                            className={`w-10 h-10 flex items-center justify-center text-xl border rounded ${sS.bg} ${sS.border}`}
+                          >
+                            {s}
+                          </div>
+                          <div
+                            className={`w-10 h-10 flex items-center justify-center text-xl border rounded mt-1 ${bS.bg} ${bS.border}`}
+                          >
+                            {b}
+                          </div>
+                        </div>
+                      );
+                    }
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 세운 */}
+            <div className="mx-2 mb-3">
+              <div className="bg-gray-800 text-white text-xs font-bold px-3 py-1 rounded-t-lg">
+                세운 (년운) - {selectedYear}년
+              </div>
+
               <div
-                key={e.month}
-                className="flex flex-col items-center mx-2 min-w-[44px]"
+                ref={seunRef}
+                className="bg-white border border-gray-200 rounded-b-lg overflow-x-auto"
               >
-                <span className="text-[12px] font-bold text-gray-600 mb-1">
-                  {e.month}월
-                </span>
-                <div
-                  className={`w-9 h-9 flex items-center justify-center text-lg rounded shadow-sm border ${sS.bg} ${sS.border}`}
-                >
-                  {s}
-                </div>
-                <div
-                  className={`w-9 h-9 flex items-center justify-center text-lg rounded shadow-sm border mt-1 ${bS.bg} ${bS.border}`}
-                >
-                  {b}
+                <div className="flex px-2 py-1 w-max">
+                  {seunList.map((e) => {
+                    const isSel = e.year === selectedYear;
+                    const [s, b] = e.ganji.split("");
+                    const sS = getOhaengStyles(s);
+                    const bS = getOhaengStyles(b);
+
+                    return (
+                      <div
+                        key={e.year}
+                        id={`year-${e.year}`}
+                        onClick={() => setSelectedYear(e.year)}
+                        className={`flex flex-col items-center px-1 mx-1 py-1 rounded-lg cursor-pointer ${
+                          isSel
+                            ? "bg-gray-100 ring-2 ring-gray-800 scale-110 shadow-md"
+                            : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <span
+                          className={`text-[12px] font-bold mb-1 ${
+                            isSel ? "text-gray-900" : "text-gray-400"
+                          }`}
+                        >
+                          {e.year}
+                        </span>
+
+                        <div
+                          className={`w-10 h-10 flex items-center justify-center text-xl rounded shadow-sm border ${sS.bg} ${sS.border}`}
+                        >
+                          {s}
+                        </div>
+                        <div
+                          className={`w-10 h-10 flex items-center justify-center text-xl rounded shadow-sm border mt-1 ${bS.bg} ${bS.border}`}
+                        >
+                          {b}
+                        </div>
+
+                        <span className="text-[12px] text-gray-500 mt-1">
+                          {e.age}세
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
+            </div>
 
-  </main>
-)}
+            {/* 월운 */}
+            <div className="mx-2 mb-10">
+              <div className="bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-t-lg">
+                월운 ({selectedYear}년)
+              </div>
 
+              <div className="bg-white border border-gray-200 rounded-b-lg overflow-x-auto">
+                <div className="flex px-2 py-1 w-max">
+                  {wolunList.map((e) => {
+                    const [s, b] = e.ganji.split("");
+                    const sS = getOhaengStyles(s);
+                    const bS = getOhaengStyles(b);
+
+                    return (
+                      <div
+                        key={e.month}
+                        className="flex flex-col items-center mx-2 min-w-[44px]"
+                      >
+                        <span className="text-[12px] font-bold text-gray-600 mb-1">
+                          {e.month}월
+                        </span>
+                        <div
+                          className={`w-9 h-9 flex items-center justify-center text-lg rounded shadow-sm border ${sS.bg} ${sS.border}`}
+                        >
+                          {s}
+                        </div>
+                        <div
+                          className={`w-9 h-9 flex items-center justify-center text-lg rounded shadow-sm border mt-1 ${bS.bg} ${bS.border}`}
+                        >
+                          {b}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </main>
+        )}
       </div>
     </div>
   );
