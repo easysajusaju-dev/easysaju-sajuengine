@@ -389,33 +389,47 @@ export default function ProSajuPage() {
 
         {/* 결과 화면 */}
           
-{/* 요약 */}
+{/* 요약 카드 (성별 아이콘 적용 버전) */}
 <div className="bg-white p-5 border-b border-gray-200 shadow-sm mb-2">
 
   <div className="flex items-center gap-3">
 
-    {/* 🔵 성별 아이콘 */}
-    <img
-      src={
-        debugData.input.isMale
-          ? "/icons/gender_male.png"     // 남자 아이콘
-          : "/icons/gender_female.png"   // 여자 아이콘
-      }
-      alt="gender"
-      className="w-7 h-7 rounded-full object-cover border"
-    />
+    {/* 성별 아이콘 */}
+    <div
+      className={`w-12 h-12 rounded-full flex items-center justify-center shadow 
+      ${debugData.input.isMale ? "bg-blue-100" : "bg-pink-100"}`}
+    >
+      <img
+        src={
+          debugData.input.isMale
+            ? "/gender/male.png"
+            : "/gender/female.png"
+        }
+        className="w-7 h-7"
+      />
+    </div>
 
-    {/* 이름 + 성별/나이 */}
-    <div className="flex items-baseline gap-2">
-      <span className="text-2xl font-bold">
-        {userName || "이름"}
-      </span>
-      <span className="text-sm text-gray-600">
-        {debugData.input.isMale ? "남" : "여"}, {koreanAge}세
-      </span>
+    {/* 이름 + 성별 + 나이 */}
+    <div className="flex flex-col">
+      <div className="flex items-baseline gap-2">
+        <span className="text-2xl font-bold">
+          {debugData.input.name}
+        </span>
+        <span className="text-sm text-gray-600">
+          {debugData.input.isMale ? "남" : "여"}, {koreanAge}세
+        </span>
+      </div>
+
+      {/* 음력·양력 텍스트 */}
+      <div className="text-xs text-gray-400">
+        (양) {debugData.finalResult.solarText} / (음){" "}
+        {debugData.finalResult.lunarText}
+      </div>
     </div>
 
   </div>
+</div>
+
 
   {/* 양력/음력 날짜 */}
   <div className="text-xs text-gray-400 mt-2">
