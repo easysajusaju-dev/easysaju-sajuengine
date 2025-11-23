@@ -121,7 +121,7 @@ function getOhaengStyles(ch: string) {
   if ("경신신유庚辛申酉".includes(ch))
     return { bg: "bg-slate-200", border: "border-slate-400" };
   if ("임계해자壬癸亥子".includes(ch))
-    return { bg: "bg-sky-400"", border: "border-sky-700" };
+    return { bg: "bg-sky-400", border: "border-sky-700" };
   return { bg: "bg-gray-200", border: "border-gray-300" };
 }
 
@@ -388,24 +388,41 @@ export default function ProSajuPage() {
         )}
 
         {/* 결과 화면 */}
-        {hasResult && !isFormOpen && engineResult && debugData && (
-          <main className="bg-slate-50 pb-20">
-            {/* 요약 */}
-            <div className="bg-white p-5 border-b border-gray-200 shadow-sm mb-2">
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold">
-                  {userName || "이름"}
-                </span>
-                <span className="text-sm text-gray-600">
-                  {debugData.input.isMale ? "남" : "여"}, {koreanAge}세
-                </span>
-              </div>
+          
+{/* 요약 */}
+<div className="bg-white p-5 border-b border-gray-200 shadow-sm mb-2">
 
-              <div className="text-xs text-gray-400 mt-1">
-                (양) {debugData.finalResult.solarText} / (음){" "}
-                {debugData.finalResult.lunarText}
-              </div>
-            </div>
+  <div className="flex items-center gap-3">
+
+    {/* 🔵 성별 아이콘 */}
+    <img
+      src={
+        debugData.input.isMale
+          ? "/icons/gender_male.png"     // 남자 아이콘
+          : "/icons/gender_female.png"   // 여자 아이콘
+      }
+      alt="gender"
+      className="w-7 h-7 rounded-full object-cover border"
+    />
+
+    {/* 이름 + 성별/나이 */}
+    <div className="flex items-baseline gap-2">
+      <span className="text-2xl font-bold">
+        {userName || "이름"}
+      </span>
+      <span className="text-sm text-gray-600">
+        {debugData.input.isMale ? "남" : "여"}, {koreanAge}세
+      </span>
+    </div>
+
+  </div>
+
+  {/* 양력/음력 날짜 */}
+  <div className="text-xs text-gray-400 mt-2">
+    (양) {debugData.finalResult.solarText} / (음){" "}
+    {debugData.finalResult.lunarText}
+  </div>
+</div>
 
             {/* 원국 */}
             <div className="mx-2 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-2">
