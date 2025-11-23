@@ -158,7 +158,7 @@ export default function ProSajuPage() {
   const [userName, setUserName] = useState("");
 
   const seunRef = useRef<HTMLDivElement>(null);
-  const COLS = ["hour", "day", "month", "year"] as const;
+  const COLS = ["year", "month", "day", "hour"] as const;
 
   const [viewOptions, setViewOptions] = useState({
     five: true,
