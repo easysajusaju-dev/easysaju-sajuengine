@@ -49,7 +49,7 @@ export default function EasySajuInputCard({ onSubmit, loading }: any) {
         <div className="absolute inset-0 bg-gradient-to-r from-[#1d2b50b3] to-[#2c3e5080]" />
         <div className="relative z-10 p-4 text-white">
           <p className="text-sm opacity-90">당신의 운명을 풀어내는 곳</p>
-          <h2 className="text-3xl font-bold mt-1">이지사주 Pro</h2>
+          <h2 className="text-3xl font-bold mt-1">이지사주</h2>
           <p className="text-base opacity-95">만세력 조회</p>
         </div>
       </div>
