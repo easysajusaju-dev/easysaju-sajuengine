@@ -430,6 +430,12 @@ export default function ProSajuPage() {
           hour: getJijanggan(engineResult.ganji.hour[1]),
         }
       : null;
+  
+   // 신살
+  const sinsal =
+    hasResult && engineResult && (engineResult as any).sinsal
+      ? (engineResult as any).sinsal
+      : null;
 
   const POS_LABEL: Record<BranchKey, string> = {
     year: "년",
@@ -767,12 +773,44 @@ export default function ProSajuPage() {
                     )
                   )}
                 </div>
-                <div className="px-3 pb-2 text-[11px] text-gray-400 text-center">
-                  신살(천을·역마·화개 등)은 기존 앱과 체계 맞춰서 다음 단계에서
-                  붙일게요.
+
+            {/* 신살 */}
+{viewOptions.hidden && sinsal && (
+  <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
+    <div className="flex justify-between items-center px-3 py-2 border-b bg-indigo-50">
+      <span className="text-sm font-bold text-gray-800">신살</span>
+      <span className="text-[11px] text-gray-500">원국 기준</span>
+    </div>
+
+    <div className="grid grid-cols-4 text-center text-xs font-bold text-gray-600 border-b py-2">
+      <div>년주</div>
+      <div>월주</div>
+      <div>일주</div>
+      <div>시주</div>
+    </div>
+
+    <div className="grid grid-cols-4 text-center text-sm py-2">
+      {["year", "month", "day", "hour"].map((key) => (
+        <div key={key} className="border-r last:border-r-0 px-1">
+          {sinsal[key] && sinsal[key].length > 0 ? (
+            <div className="space-y-0.5">
+              {sinsal[key].map((s: string, idx: number) => (
+                <div
+                  key={idx}
+                  className="text-[12px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded"
+                >
+                  {s}
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
+          ) : (
+            <div className="text-gray-400 text-xs">없음</div>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
             {/* 형·충·파·합 관계표 */}
             {viewOptions.relations && engineResult.relations && (
