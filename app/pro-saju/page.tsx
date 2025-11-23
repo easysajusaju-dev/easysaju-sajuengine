@@ -597,9 +597,7 @@ export default function ProSajuPage() {
               <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
                 <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
                   <span className="font-bold text-sm">지장간</span>
-                  <span className="text-[11px] text-gray-500">
-                    (지장간 먼저 표시)
-                  </span>
+                  <span className="text-[11px] text-gray-500"></span>
                 </div>
 
                 <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
