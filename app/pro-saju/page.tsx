@@ -1,5 +1,5 @@
 "use client";
-
+import EasySajuInputCard from "./components/EasySajuInputCard";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- [타입 정의] ---
@@ -475,90 +475,12 @@ export default function ProSajuPage() {
 
         {/* 입력 폼 */}
         {isFormOpen && (
-          <div className="p-6 bg-gray-50">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="flex p-1 bg-gray-200 rounded-lg">
-                {genderOptions.map((g) => (
-                  <button
-                    key={g.value}
-                    type="button"
-                    onClick={() => setGender(g.value)}
-                    className={`flex-1 py-2 rounded-md text-sm font-bold ${
-                      gender === g.value
-                        ? "bg-white shadow text-indigo-600"
-                        : "text-gray-500"
-                    }`}
-                  >
-                    {g.label}
-                  </button>
-                ))}
-              </div>
+  <EasySajuInputCard
+    onSubmit={handleSubmit}
+    loading={loading}
+  />
+)}
 
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full p-3 border rounded-lg text-sm"
-                placeholder="이름"
-              />
-
-              <input
-                value={birthdate}
-                onChange={(e) => setBirthdate(e.target.value)}
-                className="w-full p-3 border rounded-lg text-sm"
-                placeholder="생년월일 (예: 19780324)"
-                type="tel"
-                maxLength={8}
-              />
-
-              <div className="flex gap-3 text-sm text-gray-600 justify-end">
-                <label className="flex items-center gap-1">
-                  <input
-                    type="checkbox"
-                    checked={isLunar}
-                    onChange={(e) => setIsLunar(e.target.checked)}
-                  />
-                  음력
-                </label>
-                <label className="flex items-center gap-1">
-                  <input
-                    type="checkbox"
-                    checked={isLeap}
-                    onChange={(e) => setIsLeap(e.target.checked)}
-                  />
-                  윤달
-                </label>
-              </div>
-
-              <div className="flex gap-2">
-                <input
-                  value={birthtime}
-                  onChange={(e) => setBirthtime(e.target.value)}
-                  disabled={unknownTime}
-                  className="flex-1 p-3 border rounded-lg text-sm"
-                  placeholder="시간 (예: 1230)"
-                  type="tel"
-                  maxLength={4}
-                />
-                <label className="flex items-center gap-2 px-3 border rounded-lg bg-white text-sm">
-                  <input
-                    type="checkbox"
-                    checked={unknownTime}
-                    onChange={(e) => setUnknownTime(e.target.checked)}
-                  />
-                  모름
-                </label>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-60"
-              >
-                {loading ? "계산 중..." : "조회하기"}
-              </button>
-            </form>
-          </div>
-        )}
 
         {/* 결과 화면 */}
         {hasResult && debugData && engineResult && !isFormOpen && (
