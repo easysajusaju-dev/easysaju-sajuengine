@@ -11,7 +11,10 @@ export default function EasySajuInputCard({ onSubmit, loading }: any) {
   const [isLeap, setIsLeap] = useState(false);
   const [unknownTime, setUnknownTime] = useState(false);
 
-  const handleSubmit = () => {
+  // ⭐ 진짜 submit 핸들러 (폼 이벤트)
+  const handleLocalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
     if (!name || !birthdate) {
       alert("이름과 생년월일을 입력해주세요!");
       return;
@@ -52,11 +55,14 @@ export default function EasySajuInputCard({ onSubmit, loading }: any) {
       </div>
 
       {/* ====== 입력 카드 ====== */}
-      <div className="bg-white rounded-xl shadow p-5 space-y-4 mb-10">
-
+      <form
+        onSubmit={handleLocalSubmit}
+        className="bg-white rounded-xl shadow p-5 space-y-4 mb-10"
+      >
         {/* 성별 */}
         <div className="grid grid-cols-2 rounded-md bg-gray-100 p-1">
           <button
+            type="button"
             className={`py-2 rounded-md font-semibold ${
               gender === "M" ? "bg-white shadow" : "text-gray-500"
             }`}
@@ -65,6 +71,7 @@ export default function EasySajuInputCard({ onSubmit, loading }: any) {
             남자
           </button>
           <button
+            type="button"
             className={`py-2 rounded-md font-semibold ${
               gender === "F" ? "bg-white shadow" : "text-gray-500"
             }`}
@@ -133,13 +140,13 @@ export default function EasySajuInputCard({ onSubmit, loading }: any) {
 
         {/* 조회 버튼 */}
         <button
+          type="submit"
           className="w-full bg-[#7c80f5] text-white font-bold py-3 rounded-lg text-lg shadow active:scale-[0.98]"
-          onClick={handleSubmit}
           disabled={loading}
         >
           {loading ? "계산 중..." : "만세력 계산하기"}
         </button>
-      </div>
+      </form>
     </div>
   );
 }
