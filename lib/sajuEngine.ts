@@ -564,6 +564,6 @@ export function calculateSaju(input: SajuInput): SajuResult {
     relations,
     hiddenStems,
     hiddenSibsung,
-    sinsal,
+    sinsal: getSinsal(input), 
   };
 }
