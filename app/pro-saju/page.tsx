@@ -30,7 +30,12 @@ interface Relations {
 interface EngineResponse {
   ok: boolean;
   result?: {
-    ganji: any;
+    ganji: {
+      year: string;
+      month: string;
+      day: string;
+      hour: string;
+    };
     sibsung: any;
     branchSibsung: any;
     twelve: any;
@@ -72,7 +77,7 @@ function getMonthlyGanjiList(yearStem: string) {
   let s = start - 1;
   let b = 1;
 
-  const arr = [];
+  const arr: { month: number; ganji: string }[] = [];
   for (let i = 1; i <= 12; i++) {
     arr.push({
       month: i,
@@ -98,9 +103,6 @@ function getOhaengStyles(ch: string) {
     return { bg: "bg-sky-400", border: "border-sky-700" };
   return { bg: "bg-gray-200", border: "border-gray-300" };
 }
-
-// --- ❌ 기존 지장간 테이블, getJijanggan 전부 제거함 ---
-
 
 // ---- 본문 컴포넌트 ----
 export default function ProSajuPage() {
@@ -129,7 +131,15 @@ export default function ProSajuPage() {
   );
 
   // ---- handleSubmit ----
-  async function handleSubmit(formData: any) {
+  async function handleSubmit(formData: {
+    gender: Gender;
+    name: string;
+    birthdate: string;
+    birthtime: string;
+    isLunar: boolean;
+    isLeap: boolean;
+    unknownTime: boolean;
+  }) {
     setLoading(true);
     setError(null);
 
@@ -180,7 +190,8 @@ export default function ProSajuPage() {
       const debugRes = await fetch(
         `https://my-manseryeok.onrender.com/saju/debug?${qs}`
       );
-      const debugJson = await debugRes.json();
+      if (!debugRes.ok) throw new Error("만세력 서버 오류");
+      const debugJson: ManseryeokDebug = await debugRes.json();
       setDebugData(debugJson);
 
       const f = debugJson.finalResult;
@@ -213,7 +224,7 @@ export default function ProSajuPage() {
         }),
       });
 
-      const engineJson = await engineRes.json();
+      const engineJson: EngineResponse = await engineRes.json();
       setEngineResult(engineJson.result || null);
 
       setIsFormOpen(false);
@@ -264,7 +275,7 @@ export default function ProSajuPage() {
         })()
       : null;
 
-  // --- 🔥 핵심 수정: 지장간은 서버 값 그대로 사용 ---
+  // 지장간: 서버에서 내려준 hiddenStems 그대로 사용
   const hidden = engineResult?.hiddenStems ?? null;
 
   const sinsal =
@@ -299,51 +310,282 @@ export default function ProSajuPage() {
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center text-gray-900 select-none font-sans">
       <div className="w-full max-w-md bg-white shadow-xl min-h-screen md:min-h-0 md:h-auto md:my-5 md:rounded-xl overflow-hidden">
+        {/* 헤더 */}
+        <header className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center shadow sticky top-0 z-10">
+          <div className="flex items-center gap-2">
+            <img
+              src="https://easysajusaju-dev.github.io/logo_remove_white.png"
+              className="h-7 w-auto"
+              alt="logo"
+            />
+            <span className="font-bold text-lg">이지사주 만세력</span>
+          </div>
 
-        {/* 지장간 */}
-        {viewOptions.hidden && hidden && (
-          <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
+          <button
+            onClick={() => setIsFormOpen(!isFormOpen)}
+            className="text-xs bg-white/20 px-3 py-1 rounded hover:bg-white/30"
+          >
+            {isFormOpen ? "닫기" : "입력 열기"}
+          </button>
+        </header>
 
-            <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
-              <span className="font-bold text-sm">지장간</span>
-            </div>
-
-            <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
-              <div>년주</div>
-              <div>월주</div>
-              <div>일주</div>
-              <div>시주</div>
-            </div>
-
-            <div className="grid grid-cols-4 text-center py-2 text-sm">
-              {[hidden.year, hidden.month, hidden.day, hidden.hour].map((arr, idx) => (
-                <div
-                  key={idx}
-                  className="border-r last:border-r-0 flex flex-col items-center"
-                >
-                  {arr.length === 0 ? (
-                    <div className="text-gray-400 text-xs">없음</div>
-                  ) : (
-                    <div className="font-bold flex flex-col items-center space-y-0.5 leading-tight">
-                      {arr.map((h, i) => (
-                        <div key={i} className="block">
-                          {h}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+        {/* 에러 */}
+        {error && (
+          <div className="bg-red-50 text-red-700 text-xs px-4 py-2 border-b border-red-200">
+            {error}
           </div>
         )}
+
+        {/* 입력폼 */}
+        {isFormOpen && (
+          <EasySajuInputCard onSubmit={handleSubmit} loading={loading} />
+        )}
+
+        {/* 결과 화면 */}
+        {hasResult && !isFormOpen && engineResult && debugData && (
+          <main className="bg-slate-50 pb-20">
+            {/* 요약 카드 */}
+            <div className="bg-white p-5 border-b border-gray-200 shadow-sm mb-3">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center shadow ${
+                    debugData.input.isMale ? "bg-blue-100" : "bg-pink-100"
+                  }`}
+                >
+                  <img
+                    src={
+                      debugData.input.isMale
+                        ? "/gender/male.png"
+                        : "/gender/female.png"
+                    }
+                    className="w-7 h-7"
+                    alt="gender"
+                  />
+                </div>
+
+                <div className="flex flex-col">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold">
+                      {userName || debugData.input.name || "이름"}
+                    </span>
+                    <span className="text-sm text-gray-600">
+                      {debugData.input.isMale ? "남" : "여"},{" "}
+                      {koreanAge}세
+                    </span>
+                  </div>
+
+                  <div className="text-xs text-gray-400">
+                    (양) {debugData.finalResult.solarText} / (음){" "}
+                    {debugData.finalResult.lunarText}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 원국 카드 */}
+            <div className="mx-2 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-3">
+              <div className="grid grid-cols-4 bg-gray-50 text-center font-bold py-2 border-b">
+                <div>년주</div>
+                <div>월주</div>
+                <div>일주</div>
+                <div>시주</div>
+              </div>
+
+              {/* 천간 */}
+              <div className="grid grid-cols-4 border-b bg-white">
+                {COLS.map((col) => {
+                  const stem = engineResult.ganji[col][0];
+                  const s = getOhaengStyles(stem);
+
+                  return (
+                    <div
+                      key={col}
+                      className="py-2 flex flex-col items-center border-r last:border-r-0"
+                    >
+                      <span className="text-sm text-indigo-700 font-bold mb-1">
+                        {col === "day"
+                          ? "일간(나)"
+                          : engineResult.sibsung[col]}
+                      </span>
+                      <div
+                        className={`w-full max-w-[90px] aspect-square flex items-center justify-center text-[2.3rem] rounded shadow-sm border ${s.bg} ${s.border}`}
+                      >
+                        {stem}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 지지 */}
+              <div className="grid grid-cols-4 border-b bg-white">
+                {COLS.map((col) => {
+                  const ji = engineResult.ganji[col][1];
+                  const s = getOhaengStyles(ji);
+
+                  return (
+                    <div
+                      key={col}
+                      className="py-2 flex justify-center border-r last:border-r-0"
+                    >
+                      <div
+                        className={`w-full max-w-[90px] aspect-square flex items-center justify-center text-[2.3rem] rounded shadow-sm border ${s.bg} ${s.border}`}
+                      >
+                        {ji}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 지지 십성 */}
+              <div className="grid grid-cols-4 border-b bg-white">
+                {COLS.map((col) => (
+                  <div
+                    key={col}
+                    className="py-1.5 text-center text-blue-600 text-sm font-semibold border-r last:border-r-0"
+                  >
+                    {engineResult.branchSibsung[col]}
+                  </div>
+                ))}
+              </div>
+
+              {/* 12운성 */}
+              <div className="grid grid-cols-4 bg-white">
+                {COLS.map((col) => (
+                  <div
+                    key={col}
+                    className="py-1.5 text-center border-r last:border-r-0"
+                  >
+                    <span className="px-2 py-0.5 bg-indigo-600 text-white text-sm font-semibold rounded-full">
+                      {engineResult.twelve[col]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 표시 옵션 체크박스 */}
+            <div className="mx-2 mb-3 bg-white rounded-lg border px-3 py-2 flex flex-wrap gap-3">
+              <label className="flex items-center gap-1 text-xs">
+                <input
+                  type="checkbox"
+                  checked={viewOptions.five}
+                  onChange={() => toggleView("five")}
+                  className="w-3 h-3"
+                />
+                <span
+                  className={
+                    viewOptions.five
+                      ? "text-indigo-600 font-semibold"
+                      : "text-gray-400"
+                  }
+                >
+                  오행 분포
+                </span>
+              </label>
+
+              <label className="flex items-center gap-1 text-xs">
+                <input
+                  type="checkbox"
+                  checked={viewOptions.hidden}
+                  onChange={() => toggleView("hidden")}
+                  className="w-3 h-3"
+                />
+                <span
+                  className={
+                    viewOptions.hidden
+                      ? "text-indigo-600 font-semibold"
+                      : "text-gray-400"
+                  }
+                >
+                  지장간·신살
+                </span>
+              </label>
+
+              <label className="flex items-center gap-1 text-xs">
+                <input
+                  type="checkbox"
+                  checked={viewOptions.relations}
+                  onChange={() => toggleView("relations")}
+                  className="w-3 h-3"
+                />
+                <span
+                  className={
+                    viewOptions.relations
+                      ? "text-indigo-600 font-semibold"
+                      : "text-gray-400"
+                  }
+                >
+                  형·충·파·합
+                </span>
+              </label>
+            </div>
+
+            {/* 오행 분포 */}
+            {viewOptions.five && five && (
+              <div className="mx-2 mb-3 bg-white rounded-lg p-3 border shadow-sm">
+                <div className="font-bold text-gray-700 text-sm mb-2">
+                  오행 분포
+                </div>
+                <div className="flex justify-between text-sm font-semibold">
+                  <span>목(木) {five.목}</span>
+                  <span>화(火) {five.화}</span>
+                  <span>토(土) {five.토}</span>
+                  <span>금(金) {five.금}</span>
+                  <span>수(水) {five.수}</span>
+                </div>
+              </div>
+            )}
+
+            {/* 지장간 */}
+            {viewOptions.hidden && hidden && (
+              <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
+                <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
+                  <span className="font-bold text-sm">지장간</span>
+                  <span className="text-[11px] text-gray-500" />
+                </div>
+
+                <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
+                  <div>년주</div>
+                  <div>월주</div>
+                  <div>일주</div>
+                  <div>시주</div>
+                </div>
+
+                <div className="grid grid-cols-4 text-center py-2 text-sm">
+                  {[hidden.year, hidden.month, hidden.day, hidden.hour].map(
+                    (arr, idx) => (
+                      <div
+                        key={idx}
+                        className="border-r last:border-r-0 flex flex-col items-center"
+                      >
+                        {(!arr || arr.length === 0) ? (
+                          <div className="text-gray-400 text-xs">없음</div>
+                        ) : (
+                          <div className="font-bold flex flex-col items-center space-y-0.5 leading-tight">
+                            {arr.map((h, i) => (
+                              <div key={i} className="block">
+                                {h}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* 신살 */}
             {viewOptions.hidden && sinsal && (
               <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
                 <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
                   <span className="font-bold text-sm">신살</span>
-                  <span className="text-[11px] text-gray-500">원국 기준</span>
+                  <span className="text-[11px] text-gray-500">
+                    원국 기준
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
@@ -379,7 +621,9 @@ export default function ProSajuPage() {
               <div className="mx-2 mb-3 bg-yellow-50 rounded-lg border border-yellow-200 shadow-sm">
                 <div className="px-3 py-1.5 border-b flex justify-between">
                   <span className="font-bold text-sm">형·충·파·합</span>
-                  <span className="text-[11px] text-gray-500">원국 기준</span>
+                  <span className="text-[11px] text-gray-500">
+                    원국 기준
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-4 text-center py-1 text-xs font-bold text-gray-700">
