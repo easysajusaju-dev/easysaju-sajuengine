@@ -610,24 +610,30 @@ export default function ProSajuPage() {
     </div>
 
     <div className="grid grid-cols-4 text-center py-2 text-sm">
-      {[hidden.year, hidden.month, hidden.day, hidden.hour].map((arr, idx) => (
-        <div
-          key={idx}
-          className="border-r last:border-r-0 flex flex-col items-center"
-        >
-          {arr.length === 0 ? (
-            <div className="text-gray-400 text-xs block">없음</div>
-          ) : (
-            <div className="space-y-0.5 font-bold flex flex-col items-center">
-              {arr.map((h, i) => (
-                <div key={i} className="block">{h}</div>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
+      {[hidden.year, hidden.month, hidden.day, hidden.hour].map((arr, idx) => {
+        // 🔥 핵심: arr가 string이든 string[]이든 전부 '글자 배열'로 변환
+        const chars = Array.isArray(arr) ? arr : [...String(arr || "")];
 
+        return (
+          <div
+            key={idx}
+            className="border-r last:border-r-0 flex flex-col items-center"
+          >
+            {chars.length === 0 ? (
+              <div className="text-gray-400 text-xs">없음</div>
+            ) : (
+              <div className="font-bold flex flex-col items-center space-y-0.5 leading-tight">
+                {chars.map((h, i) => (
+                  <div key={i} className="block">
+                    {h}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   </div>
 )}
 
