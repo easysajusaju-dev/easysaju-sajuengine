@@ -472,25 +472,6 @@ export function getSinsal(input: SajuInput) {
   };
 }
 
-// 지지를 한자로 정규화하는 함수 (예: '자' → '子')
-function normalizeBranch(branch: string): string {
-  const map: Record<string, string> = {
-    자: "子", 축: "丑", 인: "寅", 묘: "卯",
-    진: "辰", 사: "巳", 오: "午", 미: "未",
-    신: "申", 유: "酉", 술: "戌", 해: "亥",
-  };
-  return map[branch] || branch;
-}
-
-// 타입 정의 예시
-interface SajuInput {
-  yearBranch: string;
-  monthBranch: string;
-  dayBranch: string;
-  hourBranch: string;
-  dayStem: string; // 귀인 포함 위해 필수
-}
-
 
 /* ===========================================
  *  지장간 십성 (한 기둥)
