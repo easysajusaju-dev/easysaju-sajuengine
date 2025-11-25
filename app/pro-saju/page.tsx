@@ -602,7 +602,6 @@ export default function ProSajuPage() {
       <span className="text-[11px] text-gray-500"></span>
     </div>
 
-    {/* 헤더 */}
     <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
       <div>년주</div>
       <div>월주</div>
@@ -610,7 +609,6 @@ export default function ProSajuPage() {
       <div>시주</div>
     </div>
 
-    {/* 값 출력 */}
     <div className="grid grid-cols-4 text-center py-2 text-sm">
       {[hidden.year, hidden.month, hidden.day, hidden.hour].map((arr, idx) => (
         <div
@@ -618,11 +616,11 @@ export default function ProSajuPage() {
           className="border-r last:border-r-0 flex flex-col items-center"
         >
           {arr.length === 0 ? (
-            <div className="text-gray-400 text-xs">없음</div>
+            <div className="text-gray-400 text-xs block">없음</div>
           ) : (
             <div className="space-y-0.5 font-bold flex flex-col items-center">
               {arr.map((h, i) => (
-                <div key={i} className="block">{h}</div>   {/* ★ 이거 추가 */}
+                <div key={i} className="block">{h}</div>
               ))}
             </div>
           )}
@@ -632,6 +630,7 @@ export default function ProSajuPage() {
 
   </div>
 )}
+
 
             {/* 신살 */}
             {viewOptions.hidden && sinsal && (
