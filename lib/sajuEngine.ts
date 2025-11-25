@@ -375,23 +375,32 @@ export function getBranchRelations(input: SajuInput) {
  * ===========================================
  */
 
-// 기본 신살 (지지 단독 기준) - 한자 지지 기준
-const SINSAL_TABLE: Record<string, string[]> = {
-  子: ["재살", "육해"],
-  丑: ["겁살", "천살"],
-  寅: ["역마", "장성"],
-  卯: ["망신"],
-  辰: ["화개"],
-  巳: ["도화"],
-  午: ["홍염"],
-  未: ["월살"],
-  申: ["년살"],
-  酉: ["지살"],
-  戌: ["재살"],
-  亥: ["겁살"],
+// ✅ 삼합 신살 + 천을귀인 포함 사주 엔진
+
+// 삼합국 지지 그룹 정의
+const SINSAL_GROUPS: Record<string, string[]> = {
+  "사유축": ["巳", "酉", "丑"],
+  "해묘미": ["亥", "卯", "未"],
+  "인오술": ["寅", "午", "戌"],
+  "신자진": ["申", "子", "辰"],
 };
 
-// 천을귀인 (일간 기준, 지지는 한자)
+// 신살표 (12신살 순서)
+const SINSAL_NAMES = [
+  "겁살", "재살", "천살", "지살",
+  "연살", "월살", "망신살", "장성살",
+  "반안살", "역마살", "육해살", "화개살",
+];
+
+// 각 삼합국의 순서에 따른 지지 배치
+const SINSAL_MATRIX: Record<string, string[]> = {
+  "사유축": ["申", "酉", "戌", "亥", "子", "丑", "寅", "卯", "辰", "巳", "午", "未"],
+  "해묘미": ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"],
+  "인오술": ["寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥", "子", "丑"],
+  "신자진": ["巳", "午", "未", "申", "酉", "戌", "亥", "子", "丑", "寅", "卯", "辰"],
+};
+
+// 천을귀인 정의
 const CHEON_EUL_GUIIN: Record<string, string[]> = {
   갑: ["丑", "亥"],
   을: ["子", "戌"],
@@ -405,70 +414,82 @@ const CHEON_EUL_GUIIN: Record<string, string[]> = {
   계: ["申", "午"],
 };
 
-// 도화(桃花) - 일지 기준
-// 자일주 → 유, 오일주 → 묘, 묘일주 → 자, 유일주 → 오
-const DOHWA_BY_DAY: Record<string, string[]> = {
-  子: ["酉"],
-  午: ["卯"],
-  卯: ["子"],
-  酉: ["午"],
-};
+// 기준지지와 비교지지를 기반으로 신살 추출
+function getSinsalByBase(baseBranch: string, targetBranch: string): string | null {
+  const groupKey = Object.keys(SINSAL_GROUPS).find(
+    key => SINSAL_GROUPS[key].includes(baseBranch)
+  );
+  if (!groupKey) return null;
 
-// 화개(華蓋) - 연지 기준 3합국에 따른 화개지
-// 인오술(火局) → 戌, 사유축(金局) → 丑, 신자진(水局) → 辰, 해묘미(木局) → 未
-const HWAGAE_GROUP: Record<string, string> = {
-  寅: "戌", 午: "戌", 戌: "戌",
-  巳: "丑", 酉: "丑", 丑: "丑",
-  申: "辰", 子: "辰", 辰: "辰",
-  亥: "未", 卯: "未", 未: "未",
-};
-
-function getCheonEulGuiin(dayStem: string, branchHan: string): string[] {
-  const arr = CHEON_EUL_GUIIN[dayStem] || [];
-  return arr.includes(branchHan) ? ["천을귀인"] : [];
+  const sinsalRow = SINSAL_MATRIX[groupKey];
+  const index = sinsalRow.indexOf(targetBranch);
+  return index !== -1 ? SINSAL_NAMES[index] : null;
 }
 
-function getDohwa(dayBranchHan: string, branchHan: string): string[] {
-  const arr = DOHWA_BY_DAY[dayBranchHan];
-  if (!arr) return [];
-  return arr.includes(branchHan) ? ["도화"] : [];
+// 천을귀인 판단
+function getCheonEulGuiin(dayStem: string, branches: Record<string, string>) {
+  const valid = CHEON_EUL_GUIIN[dayStem] || [];
+  const positions = { year: "년", month: "월", day: "일", hour: "시" };
+  const result: string[] = [];
+
+  for (const pos in branches) {
+    if (valid.includes(branches[pos])) {
+      result.push(`천을귀인[${positions[pos]}]`);
+    }
+  }
+  return result;
 }
 
-function getHwagae(yearBranchHan: string, branchHan: string): string[] {
-  const hw = HWAGAE_GROUP[yearBranchHan];
-  if (!hw) return [];
-  return hw === branchHan ? ["화개"] : [];
-}
-
-// 전체 신살
+// 메인 신살 추출 함수
 export function getSinsal(input: SajuInput) {
-  const dayStem = input.dayStem;
-  const dayBranchHan = normalizeBranch(input.dayBranch);
-  const yearBranchHan = normalizeBranch(input.yearBranch);
-
-  const branchesHan = {
+  const branches = {
     year: normalizeBranch(input.yearBranch),
     month: normalizeBranch(input.monthBranch),
     day: normalizeBranch(input.dayBranch),
     hour: normalizeBranch(input.hourBranch),
   };
 
-  function calcFor(branchHan: string): string[] {
-    let res: string[] = [];
+  const yearBase = branches.year;
+  const dayBase = branches.day;
 
-    // ① 기본 신살
-    if (SINSAL_TABLE[branchHan]) res.push(...SINSAL_TABLE[branchHan]);
+  function calcAllBy(base: string) {
+    return {
+      year: getSinsalByBase(base, branches.year),
+      month: getSinsalByBase(base, branches.month),
+      day: getSinsalByBase(base, branches.day),
+      hour: getSinsalByBase(base, branches.hour),
+    };
+  }
 
-    // ② 천을귀인 (일간 기준)
-    res.push(...getCheonEulGuiin(dayStem, branchHan));
+  return {
+    sinsal: {
+      yearBase: calcAllBy(yearBase), // 연지 기준
+      dayBase: calcAllBy(dayBase),   // 일지 기준
+    },
+    guin: {
+      cheonEulGuiin: getCheonEulGuiin(input.dayStem, branches),
+    },
+  };
+}
 
-    // ③ 도화 (일지 기준)
-    res.push(...getDohwa(dayBranchHan, branchHan));
+// 지지를 한자로 정규화하는 함수 (예: '자' → '子')
+function normalizeBranch(branch: string): string {
+  const map: Record<string, string> = {
+    자: "子", 축: "丑", 인: "寅", 묘: "卯",
+    진: "辰", 사: "巳", 오: "午", 미: "未",
+    신: "申", 유: "酉", 술: "戌", 해: "亥",
+  };
+  return map[branch] || branch;
+}
 
-    // ④ 화개 (연지 기준)
-    res.push(...getHwagae(yearBranchHan, branchHan));
-
-    // 중복 제거
+// 타입 정의 예시
+interface SajuInput {
+  yearBranch: string;
+  monthBranch: string;
+  dayBranch: string;
+  hourBranch: string;
+  dayStem: string; // 귀인 포함 위해 필수
+}
     return Array.from(new Set(res));
   }
 
