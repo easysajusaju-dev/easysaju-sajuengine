@@ -247,7 +247,7 @@ export function calcDaewoon(
 }
 
 /* ===========================================
- * 형·충·파·합
+ * 형·충·파·해
  * ===========================================
  */
 
@@ -284,7 +284,7 @@ export function getBranchRelations(input: SajuInput) {
   const hyung: any[] = [];
   const chung: any[] = [];
   const pa: any[] = [];
-  const hap: any[] = [];
+  const hae: any[] = [];
 
   function push(list: any[], kind: string, a: BranchKey, bKey: BranchKey) {
     list.push({
@@ -304,11 +304,11 @@ export function getBranchRelations(input: SajuInput) {
       if (HYUNG_SET.has(pair)) push(hyung, "형", a, bb);
       if (CHUNG_SET.has(pair)) push(chung, "충", a, bb);
       if (PA_SET.has(pair)) push(pa, "파", a, bb);
-      if (HAP_SET.has(pair)) push(hap, "합", a, bb);
+      if (HAE_SET.has(pair)) push(hae, "해", a, bb);
     }
   }
 
-  return { hyung, chung, pa, hap };
+  return { hyung, chung, pa, hae };
 }
 
 /* ===========================================
