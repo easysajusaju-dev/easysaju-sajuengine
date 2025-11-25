@@ -1,520 +1,571 @@
-// ⚠️ 전체 코드가 매우 길기 때문에 단일 메시지에 모두 담을 수 없습니다.
-// 따라서 아래에 PART 1 → PART 2 → PART 3 순으로 순차적으로 정확히 이어붙여 드리겠습니다.
+/** ===========================================
+ * TYPE DEFINITIONS
+ * ============================================
+ */
 
-// 👉 PART 1 시작
-
-"use client";
-
-import EasySajuInputCard from "./components/EasySajuInputCard";
-import React, { useState, useEffect, useRef } from "react";
-
-type Gender = "M" | "F";
-
-interface ManseryeokDebug {
-  input: any;
-  timeCalc: any;
-  seasonCalc: any;
-  finalResult: any;
+export interface SolarTerm {
+  name: string;
+  date: string;
+  isPrincipal: boolean;
 }
 
+export interface SajuInput {
+  yearStem: string;
+  yearBranch: string;
+  monthStem: string;
+  monthBranch: string;
+  dayStem: string;
+  dayBranch: string;
+  hourStem: string;
+  hourBranch: string;
+  gender: "M" | "F";
+  birth: string;         // ISO 문자열
+  solarTerms: SolarTerm[];
+}
+
+export interface SajuResult {
+  ganji: any;
+  sibsung: any;
+  branchSibsung: any;
+  twelve: any;
+  daewoon: any;
+  relations: any;     // 형·충·파·합
+  hiddenStems: any;   // 지장간
+  hiddenSibsung: any; // 지장간 십성
+  sinsal: any;        // 신살
+}
+
+/* ===========================================
+ *  공통 표 : 천간/지지 음양·오행
+ * ===========================================
+ */
+
+// 천간 음양
+const stemYinYang: Record<string, "양" | "음"> = {
+  갑: "양", 을: "음", 병: "양", 정: "음", 무: "양", 기: "음", 경: "양", 신: "음", 임: "양", 계: "음",
+  甲: "양", 乙: "음", 丙: "양", 丁: "음", 戊: "양", 己: "음", 庚: "양", 辛: "음", 壬: "양", 癸: "음",
+};
+
+// 천간 오행
+const stemElement: Record<string, "목" | "화" | "토" | "금" | "수"> = {
+  갑: "목", 을: "목", 甲: "목", 乙: "목",
+  병: "화", 정: "화", 丙: "화", 丁: "화",
+  무: "토", 기: "토", 戊: "토", 己: "토",
+  경: "금", 신: "금", 庚: "금", 辛: "금",
+  임: "수", 계: "수", 壬: "수", 癸: "수",
+};
+
+// 지지 음양 (한글 + 한자)
+const branchYinYang: Record<string, "양" | "음"> = {
+  자: "음", 축: "음", 인: "양", 묘: "음", 진: "양", 사: "양", 오: "음", 미: "음", 신: "양", 유: "음", 술: "양", 해: "양",
+  子: "음", 丑: "음", 寅: "양", 卯: "음", 辰: "양", 巳: "양", 午: "음", 未: "음", 申: "양", 酉: "음", 戌: "양", 亥: "양",
+};
+
+// 지지 오행 (한글 + 한자)
+const branchElement: Record<string, "목" | "화" | "토" | "금" | "수"> = {
+  자: "수", 축: "토", 인: "목", 묘: "목", 진: "토", 사: "화", 오: "화", 미: "토", 신: "금", 유: "금", 술: "토", 해: "수",
+  子: "수", 丑: "토", 寅: "목", 卯: "목", 辰: "토", 巳: "화", 午: "화", 未: "토", 申: "금", 酉: "금", 戌: "토", 亥: "수",
+};
+
+// 지지 한글 → 한자 정규화
+const branchNormalize: Record<string, string> = {
+  자: "子", 축: "丑", 인: "寅", 묘: "卯", 진: "辰", 사: "巳",
+  오: "午", 미: "未", 신: "申", 유: "酉", 술: "戌", 해: "亥",
+  子: "子", 丑: "丑", 寅: "寅", 卯: "卯", 辰: "辰", 巳: "巳",
+  午: "午", 未: "未", 申: "申", 酉: "酉", 戌: "戌", 亥: "亥",
+};
+
+function normalizeBranch(b: string): string {
+  return branchNormalize[b] ?? b;
+}
+
+/* ===========================================
+ *  지장간(藏干) 표 + 헬퍼
+ * ===========================================
+ */
+
+// 지장간 표 (지지 한자 기준)
+const hiddenStemTable: Record<string, string[]> = {
+  子: ["癸"],
+  丑: ["己", "癸", "辛"],
+  寅: ["甲", "丙", "戊"],
+  卯: ["乙"],
+  辰: ["戊", "乙", "癸"],
+  巳: ["丙", "庚", "戊"],
+  午: ["丁", "己"],
+  未: ["己", "丁", "乙"],
+  申: ["庚", "壬", "戊"],
+  酉: ["辛"],
+  戌: ["戊", "辛", "丁"],
+  亥: ["壬", "甲"],
+};
+
+// 지지 → 지장간 배열
+export function getHiddenStems(branch: string): string[] {
+  const b = normalizeBranch(branch);
+  return hiddenStemTable[b] ?? [];
+}
+
+/* ===========================================
+ *  십성 계산
+ * ===========================================
+ */
+
+// 내가 생(生)하는 오행
+const generate: Record<"목" | "화" | "토" | "금" | "수", "목" | "화" | "토" | "금" | "수"> = {
+  목: "화",
+  화: "토",
+  토: "금",
+  금: "수",
+  수: "목",
+};
+
+// 내가 극(剋)하는 오행
+const control: Record<"목" | "화" | "토" | "금" | "수", "목" | "화" | "토" | "금" | "수"> = {
+  목: "토",
+  토: "수",
+  수: "화",
+  화: "금",
+  금: "목",
+};
+
+export function getSibsung(dayStem: string, target: string, isBranch = false): string {
+  const myEl = stemElement[dayStem];
+  const myYY = stemYinYang[dayStem];
+
+  const targetEl = isBranch ? branchElement[target] : stemElement[target];
+  const targetYY = isBranch ? branchYinYang[target] : stemYinYang[target];
+
+  if (!myEl || !targetEl || !myYY || !targetYY) return "미정";
+
+  const sameYinYang = myYY === targetYY;
+
+  // ① 오행 같음 → 비겁
+  if (myEl === targetEl) {
+    return sameYinYang ? "비견" : "겁재";
+  }
+
+  // ② 내가 생(生)함 → 식상
+  if (generate[myEl] === targetEl) {
+    return sameYinYang ? "식신" : "상관";
+  }
+
+  // ③ 내가 극(剋)함 → 재성
+  if (control[myEl] === targetEl) {
+    return sameYinYang ? "편재" : "정재";
+  }
+
+  // ④ 나를 극함 → 관성
+  const whoControlsMe: Record<"목" | "화" | "토" | "금" | "수", "목" | "화" | "토" | "금" | "수"> = {
+    목: "금",
+    화: "수",
+    토: "목",
+    금: "화",
+    수: "토",
+  };
+  if (whoControlsMe[myEl] === targetEl) {
+    return sameYinYang ? "편관" : "정관";
+  }
+
+  // ⑤ 나를 생(生)함 → 인성
+  const whoGeneratesMe: Record<"목" | "화" | "토" | "금" | "수", "목" | "화" | "토" | "금" | "수"> = {
+    목: "수",
+    화: "목",
+    토: "화",
+    금: "토",
+    수: "금",
+  };
+  if (whoGeneratesMe[myEl] === targetEl) {
+    return sameYinYang ? "편인" : "정인";
+  }
+
+  return "미정";
+}
+
+/* ===========================================
+ *  12운성
+ * ===========================================
+ */
+
+const twelveUnseongTable: Record<string, Record<string, string>> = {
+  寅: { 甲: "건록", 乙: "제왕", 丙: "장생", 丁: "사지", 戊: "장생", 己: "사지", 庚: "절지", 辛: "태지", 壬: "병지", 癸: "목욕" },
+  卯: { 甲: "제왕", 乙: "건록", 丙: "목욕", 丁: "병지", 戊: "목욕", 己: "병지", 庚: "태지", 辛: "절지", 壬: "사지", 癸: "장생" },
+  辰: { 甲: "쇠지", 乙: "관대", 丙: "관대", 丁: "쇠지", 戊: "관대", 己: "쇠지", 庚: "양지", 辛: "묘지", 壬: "묘지", 癸: "양지" },
+  巳: { 甲: "병지", 乙: "목욕", 丙: "건록", 丁: "제왕", 戊: "건록", 己: "제왕", 庚: "장생", 辛: "사지", 壬: "절지", 癸: "태지" },
+  午: { 甲: "사지", 乙: "장생", 丙: "제왕", 丁: "건록", 戊: "제왕", 己: "건록", 庚: "목욕", 辛: "병지", 壬: "태지", 癸: "절지" },
+  未: { 甲: "묘지", 乙: "양지", 丙: "쇠지", 丁: "관대", 戊: "쇠지", 己: "관대", 庚: "쇠지", 辛: "양지", 壬: "묘지", 癸: "묘지" },
+  申: { 甲: "절지", 乙: "태지", 丙: "병지", 丁: "목욕", 戊: "병지", 己: "목욕", 庚: "건록", 辛: "제왕", 壬: "장생", 癸: "사지" },
+  酉: { 甲: "태지", 乙: "절지", 丙: "사지", 丁: "장생", 戊: "사지", 己: "장생", 庚: "제왕", 辛: "건록", 壬: "목욕", 癸: "병지" },
+  戌: { 甲: "양지", 乙: "묘지", 丙: "묘지", 丁: "양지", 戊: "묘지", 己: "양지", 庚: "쇠지", 辛: "관대", 壬: "관대", 癸: "쇠지" },
+  亥: { 甲: "장생", 乙: "사지", 丙: "절지", 丁: "태지", 戊: "절지", 己: "태지", 庚: "병지", 辛: "목욕", 壬: "건록", 癸: "제왕" },
+  子: { 甲: "목욕", 乙: "병지", 丙: "태지", 丁: "절지", 戊: "태지", 己: "절지", 庚: "사지", 辛: "장생", 壬: "제왕", 癸: "건록" },
+  丑: { 甲: "관대", 乙: "쇠지", 丙: "양지", 丁: "묘지", 戊: "양지", 己: "묘지", 庚: "양지", 辛: "쇠지", 壬: "절지", 癸: "관대" },
+};
+
+export function getTwelveUnseong(dayStem: string, branch: string): string {
+  const b = normalizeBranch(branch);
+  const row = twelveUnseongTable[b];
+  if (!row) return "미정";
+  return row[dayStem] ?? "미정";
+}
+
+// alias
+export function getTwelve(dayStem: string, branch: string): string {
+  return getTwelveUnseong(dayStem, branch);
+}
+
+/* ===========================================
+ *  대운 방향 + 수치
+ * ===========================================
+ */
+
+function isYangStem(stem: string): boolean {
+  return stemYinYang[stem] === "양";
+}
+
+export function getDirection(yearStem: string, gender: "M" | "F") {
+  const yang = isYangStem(yearStem);
+  if ((yang && gender === "M") || (!yang && gender === "F")) return "forward";
+  return "reverse";
+}
+
+export function calcDaewoon(
+  birthIso: string,
+  yearStem: string,
+  gender: "M" | "F",
+  solarTerms: SolarTerm[]
+) {
+  const direction = getDirection(yearStem, gender);
+  const birth = new Date(birthIso);
+
+  const principals = solarTerms
+    .filter((t) => t.isPrincipal)
+    .map((t) => ({ ...t, d: new Date(t.date) }))
+    .sort((a, b) => a.d.getTime() - b.d.getTime());
+
+  if (principals.length === 0) {
+    return {
+      direction,
+      diffDays: 0,
+      startAgeFloat: 0,
+      startAge: 0,
+      refTermName: "",
+      refTermDate: "",
+    };
+  }
+
+  let ref = principals[0];
+
+  if (direction === "forward") {
+    const found = principals.find((t) => t.d.getTime() > birth.getTime());
+    ref = found ?? principals[principals.length - 1];
+  } else {
+    for (let i = principals.length - 1; i >= 0; i--) {
+      if (principals[i].d.getTime() < birth.getTime()) {
+        ref = principals[i];
+        break;
+      }
+    }
+  }
+
+  const diffMs = Math.abs(birth.getTime() - ref.d.getTime());
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  const startAgeFloat = diffDays / 3;
+  const startAge = Math.round(startAgeFloat);
+
+  return {
+    direction,
+    diffDays: Math.round(diffDays * 1000) / 1000,
+    startAgeFloat,
+    startAge,
+    refTermName: ref.name,
+    refTermDate: ref.date,
+  };
+}
+
+/* ===========================================
+ *  형·충·파·합
+ * ===========================================
+ */
+
+const HYUNG_SET = new Set<string>([
+  "寅巳","巳寅","寅申","申寅","巳申","申巳", // 인사신 삼형
+  "丑戌","戌丑","丑未","未丑","戌未","未戌", // 축술미 삼형
+  "子卯","卯子",                           // 자묘 형
+  "辰辰","午午","酉酉","亥亥",             // 자형
+]);
+
+const CHUNG_SET = new Set<string>([
+  "子午","午子",
+  "丑未","未丑",
+  "寅申","申寅",
+  "卯酉","酉卯",
+  "辰戌","戌辰",
+  "巳亥","亥巳",
+]);
+
+const PA_SET = new Set<string>([
+  "子酉","酉子",
+  "丑辰","辰丑",
+  "寅亥","亥寅",
+  "巳申","申巳",
+  "午卯","卯午",
+  "戌未","未戌",
+]);
+
+const HAP_SET = new Set<string>([
+  "子丑","丑子",
+  "寅亥","亥寅",
+  "卯戌","戌卯",
+  "辰酉","酉辰",
+  "巳申","申巳",
+  "午未","未午",
+]);
+
+type BranchKey = "year" | "month" | "day" | "hour";
+
 interface RelationItem {
-  from: "year" | "month" | "day" | "hour";
-  to: "year" | "month" | "day" | "hour";
+  from: BranchKey;
+  to: BranchKey;
   branches: string;
   kind: "형" | "충" | "파" | "합";
 }
 
-interface Relations {
-  hyung: RelationItem[];
-  chung: RelationItem[];
-  pa: RelationItem[];
-  hap: RelationItem[];
-}
-
-interface EngineResponse {
-  ok: boolean;
-  result?: {
-    ganji: any;
-    sibsung: any;
-    branchSibsung: any;
-    twelve: any;
-    daewoon: {
-      direction: "forward" | "reverse";
-      startAge: number;
-    };
-    relations?: Relations;
-    sinsal?: any;
-    guin?: {
-      cheonEulGuiin: ("year" | "month" | "day" | "hour")[];
-    };
+export function getBranchRelations(input: SajuInput) {
+  const branches: Record<BranchKey, string> = {
+    year: normalizeBranch(input.yearBranch),
+    month: normalizeBranch(input.monthBranch),
+    day: normalizeBranch(input.dayBranch),
+    hour: normalizeBranch(input.hourBranch),
   };
-  error?: string;
-}
 
-// ------------- 십간·십이지 -------------
-const CHEONGAN = "갑을병정무기경신임계";
-const JIJI = "자축인묘진사오미신유술해";
-const GANJI_60: string[] = [];
-for (let i = 0; i < 60; i++) {
-  GANJI_60.push(CHEONGAN[i % 10] + JIJI[i % 12]);
-}
+  const keys: BranchKey[] = ["year", "month", "day", "hour"];
+  const hyung: RelationItem[] = [];
+  const chung: RelationItem[] = [];
+  const pa: RelationItem[] = [];
+  const hap: RelationItem[] = [];
 
-const HANJA_GAN_MAP: Record<string, string> = {
-  갑: "甲",
-  을: "乙",
-  병: "丙",
-  정: "丁",
-  무: "戊",
-  기: "己",
-  경: "庚",
-  신: "辛",
-  임: "壬",
-  계: "癸",
-};
-
-const HANJA_JI_MAP: Record<string, string> = {
-  자: "子",
-  축: "丑",
-  인: "寅",
-  묘: "卯",
-  진: "辰",
-  사: "巳",
-  오: "午",
-  미: "未",
-  신: "申",
-  유: "酉",
-  술: "戌",
-  해: "亥",
-};
-
-function toHanja(g: string) {
-  return (HANJA_GAN_MAP[g[0]] ?? g[0]) + (HANJA_JI_MAP[g[1]] ?? g[1]);
-}
-
-function getGanjiByYear(year: number) {
-  const idx = (year - 1984) % 60;
-  return GANJI_60[(idx + 60) % 60];
-}
-
-function getMonthlyGanjiList(yearStem: string) {
-  const ganIdx = CHEONGAN.indexOf(yearStem);
-  if (ganIdx === -1) return [];
-  const start = (ganIdx % 5) * 2 + 2;
-  let s = start - 1;
-  let b = 1;
-  const arr = [];
-  for (let i = 1; i <= 12; i++) {
-    arr.push({ month: i, ganji: toHanja(CHEONGAN[s % 10] + JIJI[b % 12]) });
-    s++; b++;
+  function push(list: RelationItem[], kind: RelationItem["kind"], a: BranchKey, b: BranchKey) {
+    list.push({
+      from: a,
+      to: b,
+      branches: branches[a] + branches[b],
+      kind,
+    });
   }
-  return arr;
+
+  for (let i = 0; i < keys.length; i++) {
+    for (let j = i + 1; j < keys.length; j++) {
+      const a = keys[i];
+      const b = keys[j];
+      const pair = branches[a] + branches[b];
+
+      if (HYUNG_SET.has(pair)) push(hyung, "형", a, b);
+      if (CHUNG_SET.has(pair)) push(chung, "충", a, b);
+      if (PA_SET.has(pair)) push(pa, "파", a, b);
+      if (HAP_SET.has(pair)) push(hap, "합", a, b);
+    }
+  }
+
+  return { hyung, chung, pa, hap };
 }
 
-// ---- 오행 ----
-function getOhaengStyles(ch: string) {
-  if ("갑을인묘甲乙寅卯".includes(ch)) return { bg: "bg-green-400", border: "border-green-700" };
-  if ("병정사오丙丁巳午".includes(ch)) return { bg: "bg-red-400", border: "border-red-700" };
-  if ("무기진술축미戊己辰戌丑未".includes(ch)) return { bg: "bg-yellow-300", border: "border-yellow-600" };
-  if ("경신신유庚辛申酉".includes(ch)) return { bg: "bg-slate-200", border: "border-slate-400" };
-  if ("임계해자壬癸亥子".includes(ch)) return { bg: "bg-sky-400", border: "border-sky-700" };
-  return { bg: "bg-gray-200", border: "border-gray-300" };
-}
+/* ===========================================
+ *  신살 (12신살 + 천을귀인)
+ *   - 연지 기준 + 일지 기준을 한 칸에 같이 표시
+ *   - 예) "지살[년]", "장성살[일]", "천을귀인"
+ * ===========================================
+ */
 
-// ---- 지장간 ----
-const BRANCH_HIDDEN: Record<string, string[]> = {
-  "子": ["癸"], "丑": ["己", "癸", "辛"], "寅": ["甲", "丙", "戊"], "卯": ["乙"],
-  "辰": ["戊", "乙", "癸"], "巳": ["丙", "戊", "庚"], "午": ["丁", "己"], "未": ["己", "丁", "乙"],
-  "申": ["庚", "壬", "戊"], "酉": ["辛"], "戌": ["戊", "辛", "丁"], "亥": ["壬", "甲"],
+// 삼합국 지지 그룹 정의
+const SINSAL_GROUPS: Record<string, string[]> = {
+  "사유축": ["巳", "酉", "丑"],
+  "해묘미": ["亥", "卯", "未"],
+  "인오술": ["寅", "午", "戌"],
+  "신자진": ["申", "子", "辰"],
 };
-function getJijanggan(j: string) { return BRANCH_HIDDEN[j] ?? []; }
 
-// ==============================
-//   ⭐⭐ 신살 병기 + 천을귀인 처리 ⭐⭐
-// ==============================
+// 신살표 (12신살 순서)
+const SINSAL_NAMES = [
+  "겁살", "재살", "천살", "지살",
+  "연살", "월살", "망신살", "장성살",
+  "반안살", "역마살", "육해살", "화개살",
+];
 
-function getMergedSinsalView(result: EngineResponse["result"]) {
-  const positions = ["year", "month", "day", "hour"];
-  const out: Record<string, string[]> = { year: [], month: [], day: [], hour: [] };
-  if (!result?.sinsal) return out;
+// 각 삼합국의 순서에 따른 지지 배치
+const SINSAL_MATRIX: Record<string, string[]> = {
+  "사유축": ["申", "酉", "戌", "亥", "子", "丑", "寅", "卯", "辰", "巳", "午", "未"],
+  "해묘미": ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"],
+  "인오술": ["寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥", "子", "丑"],
+  "신자진": ["巳", "午", "未", "申", "酉", "戌", "亥", "子", "丑", "寅", "卯", "辰"],
+};
 
-  positions.forEach((p) => {
-    const y = result.sinsal.yearBase?.[p];
-    const d = result.sinsal.dayBase?.[p];
+// 천을귀인 정의 (일간 기준)
+const CHEON_EUL_GUIIN: Record<string, string[]> = {
+  갑: ["丑", "亥"],
+  을: ["子", "戌"],
+  병: ["丑", "亥"],
+  정: ["子", "戌"],
+  무: ["寅", "子"],
+  기: ["酉", "亥"],
+  경: ["寅", "子"],
+  신: ["酉", "亥"],
+  임: ["卯", "丑"],
+  계: ["申", "午"],
+};
 
-    const arr: string[] = [];
+// 기준지지와 비교지지를 기반으로 신살 추출
+function getSinsalByBase(baseBranch: string, targetBranch: string): string | null {
+  const groupKey = Object.keys(SINSAL_GROUPS).find(
+    (key) => SINSAL_GROUPS[key].includes(baseBranch)
+  );
+  if (!groupKey) return null;
+
+  const sinsalRow = SINSAL_MATRIX[groupKey];
+  const index = sinsalRow.indexOf(targetBranch);
+  return index !== -1 ? SINSAL_NAMES[index] : null;
+}
+
+// 천을귀인 위치
+function getCheonEulGuiinPositions(dayStem: string, branches: Record<BranchKey, string>): BranchKey[] {
+  const valid = CHEON_EUL_GUIIN[dayStem] || [];
+  const result: BranchKey[] = [];
+  (["year", "month", "day", "hour"] as BranchKey[]).forEach((pos) => {
+    if (valid.includes(branches[pos])) {
+      result.push(pos);
+    }
+  });
+  return result;
+}
+
+// 메인 신살 추출 함수
+export function getSinsal(input: SajuInput) {
+  const branches: Record<BranchKey, string> = {
+    year: normalizeBranch(input.yearBranch),
+    month: normalizeBranch(input.monthBranch),
+    day: normalizeBranch(input.dayBranch),
+    hour: normalizeBranch(input.hourBranch),
+  };
+
+  const yearBase = branches.year;
+  const dayBase = branches.day;
+
+  function calcAllBy(base: string) {
+    return {
+      year: getSinsalByBase(base, branches.year),
+      month: getSinsalByBase(base, branches.month),
+      day: getSinsalByBase(base, branches.day),
+      hour: getSinsalByBase(base, branches.hour),
+    } as Record<BranchKey, string | null>;
+  }
+
+  const yearBaseMap = calcAllBy(yearBase); // 연지 기준
+  const dayBaseMap = calcAllBy(dayBase);   // 일지 기준
+  const guinPos = getCheonEulGuiinPositions(input.dayStem, branches);
+
+  const result: Record<BranchKey, string[]> = {
+    year: [],
+    month: [],
+    day: [],
+    hour: [],
+  };
+
+  (["year", "month", "day", "hour"] as BranchKey[]).forEach((pos) => {
+    const arr = result[pos];
+    const d = dayBaseMap[pos];
+    const y = yearBaseMap[pos];
     if (d) arr.push(`${d}[일]`);
-    if (y) arr.push(`${y}[연]`);
-
-    out[p] = arr;
+    if (y) arr.push(`${y}[년]`);
+    if (guinPos.includes(pos)) arr.push("천을귀인");
   });
 
-  return out;
+  return result;
 }
 
-function isCheonEulGuiin(result: EngineResponse["result"], pos: string) {
-  return result?.guin?.cheonEulGuiin?.includes(pos as any);
+/* ===========================================
+ *  지장간 십성 (한 기둥)
+ * ===========================================
+ */
+
+function getHiddenSibsungForBranch(dayStem: string, branch: string): string[] {
+  const stems = getHiddenStems(branch);
+  return stems.map((hs) => getSibsung(dayStem, hs));
 }
 
-// PART 1 끝
+/* ===========================================
+ *  메인 엔진
+ * ===========================================
+ */
 
-// 👉 PART 2 시작
+export function calculateSaju(input: SajuInput): SajuResult {
+  // 1) 천간 십성
+  const sibsung = {
+    year:  getSibsung(input.dayStem, input.yearStem),
+    month: getSibsung(input.dayStem, input.monthStem),
+    day:   "비견",
+    hour:  getSibsung(input.dayStem, input.hourStem),
+  };
 
-// ---- 본문 컴포넌트 ----
-export default function ProSajuPage() {
-  const [isFormOpen, setIsFormOpen] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [debugData, setDebugData] = useState<ManseryeokDebug | null>(null);
-  const [engineResult, setEngineResult] = useState<EngineResponse["result"] | null>(null);
+  // 2) 지지 십성
+  const branchSibsung = {
+    year:  getSibsung(input.dayStem, input.yearBranch, true),
+    month: getSibsung(input.dayStem, input.monthBranch, true),
+    day:   getSibsung(input.dayStem, input.dayBranch, true),
+    hour:  getSibsung(input.dayStem, input.hourBranch, true),
+  };
 
-  const [userName, setUserName] = useState("");
-  const seunRef = useRef<HTMLDivElement>(null);
-  const COLS = ["year", "month", "day", "hour"] as const;
+  // 3) 12운성
+  const twelve = {
+    year:  getTwelve(input.dayStem, input.yearBranch),
+    month: getTwelve(input.dayStem, input.monthBranch),
+    day:   getTwelve(input.dayStem, input.dayBranch),
+    hour:  getTwelve(input.dayStem, input.hourBranch),
+  };
 
-  const [viewOptions, setViewOptions] = useState({ five: true, hidden: true, relations: true });
-  const toggleView = (k: keyof typeof viewOptions) => setViewOptions((p) => ({ ...p, [k]: !p[k] }));
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-
-  async function handleSubmit(formData: {
-    gender: Gender;
-    name: string;
-    birthdate: string;
-    birthtime: string;
-    isLunar: boolean;
-    isLeap: boolean;
-    unknownTime: boolean;
-  }) {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const { gender, name, birthdate, birthtime, isLunar, isLeap, unknownTime } = formData;
-      setUserName(name);
-
-      if (birthdate.length !== 8) throw new Error("생년월일 8자리 입력");
-
-      const Y = Number(birthdate.slice(0, 4));
-      const M = Number(birthdate.slice(4, 6));
-      const D = Number(birthdate.slice(6, 8));
-
-      let hh = 0, mm = 0;
-      if (!unknownTime) {
-        if (birthtime.length !== 4) throw new Error("출생시간 4자리 입력");
-        hh = Number(birthtime.slice(0, 2));
-        mm = Number(birthtime.slice(2, 4));
-      }
-
-      const qs = new URLSearchParams({
-        year: String(Y), month: String(M), day: String(D), hour: String(hh), min: String(mm),
-        isLunar: String(isLunar), leap: String(isLeap), isMale: gender === "M" ? "true" : "false",
-        pivotMin: "30", tzAdjust: "-30", seasonAdjust: "0",
-      });
-
-      const debugRes = await fetch(`https://my-manseryeok.onrender.com/saju/debug?${qs}`);
-      if (!debugRes.ok) throw new Error("만세력 서버 오류");
-      const debugJson: ManseryeokDebug = await debugRes.json();
-
-      setDebugData(debugJson);
-      const f = debugJson.finalResult;
-      const birthIso = `${debugJson.timeCalc.birthAdjusted || debugJson.timeCalc.originalBirth}:00+09:00`;
-
-      const engineRes = await fetch("/api/saju", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          yearStem: f.yearGanji[0], yearBranch: f.yearGanji[1],
-          monthStem: f.monthGanji[0], monthBranch: f.monthGanji[1],
-          dayStem: f.dayGanji[0], dayBranch: f.dayGanji[1],
-          hourStem: f.hourGanji[0], hourBranch: f.hourGanji[1],
-          gender,
-          birth: birthIso,
-          solarTerms: [{ name: f.termName, date: `${debugJson.seasonCalc.rawTermDate}:00+09:00`, isPrincipal: true }],
-        }),
-      });
-
-      const engineJson: EngineResponse = await engineRes.json();
-      setEngineResult(engineJson.result || null);
-
-      setIsFormOpen(false);
-      setSelectedYear(new Date().getFullYear());
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const hasResult = !!(debugData && engineResult);
-  const currentYear = new Date().getFullYear();
-  const birthYear = debugData ? Number(debugData.input.year) : 0;
-  const koreanAge = birthYear ? currentYear - birthYear + 1 : 0;
-
-  const seunList: { year: number; age: number; ganji: string }[] = [];
-  if (hasResult) {
-    for (let i = 0; i <= 100; i++) {
-      const year = birthYear + i;
-      seunList.push({ year, age: i + 1, ganji: toHanja(getGanjiByYear(year)) });
-    }
-  }
-
-  const selectedYearGanji = hasResult ? getGanjiByYear(selectedYear) : "갑자";
-  const wolunList = hasResult ? getMonthlyGanjiList(selectedYearGanji[0]) : [];
-
-  const five = hasResult && engineResult ? (() => {
-    const str = Object.values(engineResult.ganji).join("");
-    return {
-      목: [...str].filter((c) => "갑을인묘甲乙寅卯".includes(c)).length,
-      화: [...str].filter((c) => "병정사오丙丁巳午".includes(c)).length,
-      토: [...str].filter((c) => "무기진술축미戊己辰戌丑未".includes(c)).length,
-      금: [...str].filter((c) => "경신신유庚辛申酉".includes(c)).length,
-      수: [...str].filter((c) => "임계해자壬癸亥子".includes(c)).length,
-    };
-  })() : null;
-
-  const hidden = hasResult && engineResult ? {
-    year: getJijanggan(engineResult.ganji.year[1]),
-    month: getJijanggan(engineResult.ganji.month[1]),
-    day: getJijanggan(engineResult.ganji.day[1]),
-    hour: getJijanggan(engineResult.ganji.hour[1]),
-  } : null;
-
-  const mergedSinsal = hasResult && engineResult ? getMergedSinsalView(engineResult) : null;
-
-// PART 2 끝
-
-// 👉 PART 3 시작
-
-  const formatR = (r: RelationItem) =>
-    `${{ year: "년", month: "월", day: "일", hour: "시" }[r.from]}-${{ year: "년", month: "월", day: "일", hour: "시" }[r.to]} (${r.branches})`;
-
-  useEffect(() => {
-    if (engineResult && seunRef.current) {
-      setTimeout(() => {
-        const target = document.getElementById(`year-${selectedYear}`);
-        if (target) {
-          target.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-        }
-      }, 300);
-    }
-  }, [engineResult, selectedYear]);
-
-  return (
-    <div className="min-h-screen bg-gray-100 flex justify-center text-gray-900 select-none font-sans">
-      <div className="w-full max-w-md bg-white shadow-xl min-h-screen md:min-h-0 md:h-auto md:my-5 md:rounded-xl overflow-hidden">
-
-        {/* 헤더 */}
-        <header className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center shadow sticky top-0 z-10">
-          <div className="flex items-center gap-2">
-            <img src="https://easysajusaju-dev.github.io/logo_remove_white.png" className="h-7 w-auto" alt="logo" />
-            <span className="font-bold text-lg">이지사주 만세력</span>
-          </div>
-
-          <button onClick={() => setIsFormOpen(!isFormOpen)} className="text-xs bg-white/20 px-3 py-1 rounded hover:bg-white/30">
-            {isFormOpen ? "닫기" : "입력 열기"}
-          </button>
-        </header>
-
-        {/* 에러 */}
-        {error && (
-          <div className="bg-red-50 text-red-700 text-xs px-4 py-2 border-b border-red-200">{error}</div>
-        )}
-
-        {/* 입력폼 */}
-        {isFormOpen && (
-          <EasySajuInputCard onSubmit={handleSubmit} loading={loading} />
-        )}
-
-        {/* 결과 화면 */}
-        {hasResult && !isFormOpen && engineResult && debugData && (
-          <main className="bg-slate-50 pb-20">
-
-            {/* 요약 카드 */}
-            <div className="bg-white p-5 border-b border-gray-200 shadow-sm mb-3">
-              <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow ${debugData.input.isMale ? "bg-blue-100" : "bg-pink-100"}`}>
-                  <img src={debugData.input.isMale ? "/gender/male.png" : "/gender/female.png"} className="w-7 h-7" />
-                </div>
-
-                <div className="flex flex-col">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">{userName || debugData.input.name || "이름"}</span>
-                    <span className="text-sm text-gray-600">{debugData.input.isMale ? "남" : "여"}, {koreanAge}세</span>
-                  </div>
-
-                  <div className="text-xs text-gray-400">(양) {debugData.finalResult.solarText} / (음) {debugData.finalResult.lunarText}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* 원국 카드 */}
-            <div className="mx-2 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-3">
-              <div className="grid grid-cols-4 bg-gray-50 text-center font-bold py-2 border-b">
-                <div>년주</div><div>월주</div><div>일주</div><div>시주</div>
-              </div>
-
-              {/* 천간 */}
-              <div className="grid grid-cols-4 border-b bg-white">
-                {COLS.map((col) => {
-                  const stem = engineResult.ganji[col][0];
-                  const s = getOhaengStyles(stem);
-                  return (
-                    <div key={col} className="py-2 flex flex-col items-center border-r last:border-r-0">
-                      <span className="text-sm text-indigo-700 font-bold mb-1">
-                        {col === "day" ? "일간(나)" : engineResult.sibsung[col]}
-                      </span>
-                      <div className={`w-full max-w-[90px] aspect-square flex items-center justify-center text-[2.3rem] rounded shadow-sm border ${s.bg} ${s.border}`}>{stem}</div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* 지지 */}
-              <div className="grid grid-cols-4 border-b bg-white">
-                {COLS.map((col) => {
-                  const ji = engineResult.ganji[col][1];
-                  const s = getOhaengStyles(ji);
-                  return (
-                    <div key={col} className="py-2 flex justify-center border-r last:border-r-0">
-                      <div className={`w-full max-w-[90px] aspect-square flex items-center justify-center text-[2.3rem] rounded shadow-sm border ${s.bg} ${s.border}`}>{ji}</div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* 지지 십성 */}
-              <div className="grid grid-cols-4 border-b bg-white">
-                {COLS.map((col) => (
-                  <div key={col} className="py-1.5 text-center text-blue-600 text-sm font-semibold border-r last:border-r-0">
-                    {engineResult.branchSibsung[col]}
-                  </div>
-                ))}
-              </div>
-
-              {/* 12운성 */}
-              <div className="grid grid-cols-4 bg-white">
-                {COLS.map((col) => (
-                  <div key={col} className="py-1.5 text-center border-r last:border-r-0">
-                    <span className="px-2 py-0.5 bg-indigo-600 text-white text-sm font-semibold rounded-full">{engineResult.twelve[col]}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 표시 옵션 */}
-            <div className="mx-2 mb-3 bg-white rounded-lg border px-3 py-2 flex flex-wrap gap-3">
-              <label className="flex items-center gap-1 text-xs">
-                <input type="checkbox" checked={viewOptions.five} onChange={() => toggleView("five")} className="w-3 h-3" />
-                <span className={viewOptions.five ? "text-indigo-600 font-semibold" : "text-gray-400"}>오행 분포</span>
-              </label>
-
-              <label className="flex items-center gap-1 text-xs">
-                <input type="checkbox" checked={viewOptions.hidden} onChange={() => toggleView("hidden")} className="w-3 h-3" />
-                <span className={viewOptions.hidden ? "text-indigo-600 font-semibold" : "text-gray-400"}>지장간·신살</span>
-              </label>
-
-              <label className="flex items-center gap-1 text-xs">
-                <input type="checkbox" checked={viewOptions.relations} onChange={() => toggleView("relations")} className="w-3 h-3" />
-                <span className={viewOptions.relations ? "text-indigo-600 font-semibold" : "text-gray-400"}>형·충·파·합</span>
-              </label>
-            </div>
-
-// PART 3 끝
-
-// 👉 PART 4 시작 (신살 출력 + 이후 모든 렌더링)
-
-            {/* 지장간 */}
-            {viewOptions.hidden && hidden && (
-              <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
-                <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
-                  <span className="font-bold text-sm">지장간</span>
-                </div>
-
-                <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
-                  <div>년주</div><div>월주</div><div>일주</div><div>시주</div>
-                </div>
-
-                <div className="grid grid-cols-4 text-center py-2 text-sm">
-                  {[hidden.year, hidden.month, hidden.day, hidden.hour].map((arr, idx) => (
-                    <div key={idx} className="border-r last:border-r-0">
-                      {arr.length === 0 ? (
-                        <div className="text-gray-400 text-xs">없음</div>
-                      ) : (
-                        <div className="space-y-0.5 font-bold">{arr.join(" ")}</div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 신살 */}
-            {viewOptions.hidden && mergedSinsal && (
-              <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
-                <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
-                  <span className="font-bold text-sm">신살</span>
-                  <span className="text-[11px] text-gray-500">연·일 기준 병기</span>
-                </div>
-
-                <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
-                  <div>년</div><div>월</div><div>일</div><div>시</div>
-                </div>
-
-                <div className="grid grid-cols-4 text-center py-2">
-                  {["year", "month", "day", "hour"].map((key) => (
-                    <div key={key} className="border-r last:border-r-0">
-                      {mergedSinsal[key].length > 0 ? (
-                        mergedSinsal[key].map((s, idx) => (
-                          <div key={idx} className="text-[12px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 mb-1 rounded">
-                            {s}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-gray-400 text-xs">없음</div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 형 충 파 합 */}
-            {viewOptions.relations && engineResult.relations && (
-              <div className="mx-2 mb-3 bg-yellow-50 rounded-lg border border-yellow-200 shadow-sm">
-                <div className="px-3 py-1.5 border-b flex justify-between">
-                  <span className="font-bold text-sm">형·충·파·합</span>
-                  <span className="text-[11px] text-gray-500">원국 기준</span>
-                </div>
-
-                <div className="grid grid-cols-4 text-center py-1 text-xs font-bold text-gray-700">
-                  <div>형</div><div>충</div><div>파</div><div>합</div>
-                </div>
-
-                <div className="grid grid-cols-4 text-center pb-2 text-[11px]">
-                  {["hyung", "chung", "pa", "hap"].map((k) => (
-                    <div key={k} className="border-l first:border-l-0 border-yellow-200 px-2">
-                      {engineResult.relations[k]?.length > 0 ? (
-                        engineResult.relations[k].map((r, i) => (
-                          <div key={i} className="py-0.5">
-                            <span className="bg-white px-1.5 py-0.5 rounded border border-yellow-300">{formatR(r)}</span>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-gray-400 py-1">-</div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* (이하 대운/세운/월운 부분은 기존 그대로) */}
-
-          </main>
-        )}
-
-      </div>
-    </div>
+  // 4) 대운
+  const daewoon = calcDaewoon(
+    input.birth,
+    input.yearStem,
+    input.gender,
+    input.solarTerms
   );
-}
 
-// PART 4 끝
+  // 5) 형·충·파·합
+  const relations = getBranchRelations(input);
+
+  // 6) 지장간 + 지장간 십성
+  const hiddenStems = {
+    year:  getHiddenStems(input.yearBranch),
+    month: getHiddenStems(input.monthBranch),
+    day:   getHiddenStems(input.dayBranch),
+    hour:  getHiddenStems(input.hourBranch),
+  };
+
+  const hiddenSibsung = {
+    year:  getHiddenSibsungForBranch(input.dayStem, input.yearBranch),
+    month: getHiddenSibsungForBranch(input.dayStem, input.monthBranch),
+    day:   getHiddenSibsungForBranch(input.dayStem, input.dayBranch),
+    hour:  getHiddenSibsungForBranch(input.dayStem, input.hourBranch),
+  };
+
+  // 7) 신살
+  const sinsal = getSinsal(input);
+
+  // 8) 결과 합치기
+  return {
+    ganji: {
+      year:  input.yearStem  + input.yearBranch,
+      month: input.monthStem + input.monthBranch,
+      day:   input.dayStem   + input.dayBranch,
+      hour:  input.hourStem  + input.hourBranch,
+    },
+    sibsung,
+    branchSibsung,
+    twelve,
+    daewoon,
+    relations,
+    hiddenStems,
+    hiddenSibsung,
+    sinsal,
+  };
+}
