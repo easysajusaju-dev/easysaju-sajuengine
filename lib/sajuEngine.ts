@@ -321,14 +321,20 @@ const CHEON_EUL_GUIIN: Record<string, string[]> = {
 };
 
 function getSinsalByBase(baseBranch: string, targetBranch: string): string | null {
-  const groupKey = Object.keys(SINSAL_GROUPS).find(key =>
-    SINSAL_GROUPS[key].includes(baseBranch)
+  const groupKey = Object.keys(SINSAL_GROUPS).find(
+    (key) => SINSAL_GROUPS[key].includes(baseBranch)
   );
   if (!groupKey) return null;
 
   const row = SINSAL_MATRIX[groupKey];
-  const idx = row.indexOf(targetBranch);
-  return idx !== -1 ? SINSAL_NAMES[idx] : null;
+
+  const baseIndex = row.indexOf(baseBranch);
+  const targetIndex = row.indexOf(targetBranch);
+
+  if (baseIndex === -1 || targetIndex === -1) return null;
+
+  const diff = (targetIndex - baseIndex + 12) % 12;
+  return SINSAL_NAMES[diff];
 }
 
 function getCheonEulGuiin(dayStem: string, branches: Record<BranchKey,string>) {
