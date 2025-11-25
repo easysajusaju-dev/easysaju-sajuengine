@@ -51,9 +51,16 @@ interface EngineResponse {
       day: string[];
       hour: string[];
     };
+
+    // 🔥 공망 추가
+    gongmang?: {
+      year: string | null;
+      day: string | null;
+    };
   };
   error?: string;
 }
+
 
 // ---- 갑자/지지 ----
 const CHEONGAN = "갑을병정무기경신임계";
