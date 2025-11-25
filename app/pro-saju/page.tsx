@@ -538,45 +538,53 @@ export default function ProSajuPage() {
               </div>
             )}
 
-            {/* 지장간 */}
-            {viewOptions.hidden && hidden && (
-              <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
-                <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
-                  <span className="font-bold text-sm">지장간</span>
-                  <span className="text-[11px] text-gray-500" />
-                </div>
+           {/* 지장간 */}
+{viewOptions.hidden && hidden && (
+  <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
 
-                <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
-                  <div>년주</div>
-                  <div>월주</div>
-                  <div>일주</div>
-                  <div>시주</div>
-                </div>
+    {/* 제목 + 공망 */}
+    <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
+      <span className="font-bold text-sm">지장간</span>
 
-                <div className="grid grid-cols-4 text-center py-2 text-sm">
-                  {[hidden.year, hidden.month, hidden.day, hidden.hour].map(
-                    (arr, idx) => (
-                      <div
-                        key={idx}
-                        className="border-r last:border-r-0 flex flex-col items-center"
-                      >
-                        {(!arr || arr.length === 0) ? (
-                          <div className="text-gray-400 text-xs">없음</div>
-                        ) : (
-                          <div className="font-bold flex flex-col items-center space-y-0.5 leading-tight">
-                            {arr.map((h, i) => (
-                              <div key={i} className="block">
-                                {h}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  )}
+      {/* 🔥 공망 표시 */}
+      <span className="text-[11px] text-gray-600">
+        공망 :
+        {engineResult?.gongmang
+          ? ` ${engineResult.gongmang.year}[년], ${engineResult.gongmang.day}[일]`
+          : " -"}
+      </span>
+    </div>
+
+    <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
+      <div>년주</div>
+      <div>월주</div>
+      <div>일주</div>
+      <div>시주</div>
+    </div>
+
+    <div className="grid grid-cols-4 text-center py-2 text-sm">
+      {[hidden.year, hidden.month, hidden.day, hidden.hour].map((arr, idx) => (
+        <div
+          key={idx}
+          className="border-r last:border-r-0 flex flex-col items-center"
+        >
+          {(!arr || arr.length === 0) ? (
+            <div className="text-gray-400 text-xs">없음</div>
+          ) : (
+            <div className="font-bold flex flex-col items-center space-y-0.5 leading-tight">
+              {arr.map((h, i) => (
+                <div key={i} className="block">
+                  {h}
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
 
             {/* 신살 */}
             {viewOptions.hidden && sinsal && (
