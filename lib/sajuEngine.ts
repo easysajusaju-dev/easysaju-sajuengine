@@ -301,9 +301,9 @@ const SINSAL_NAMES = [
 ];
 
 const SINSAL_MATRIX: Record<string, string[]> = {
+  "사유축": ["寅","卯","辰","巳","午","未","申","酉","戌","亥","子","丑"],
   "해묘미": ["申","酉","戌","亥","子","丑","寅","卯","辰","巳","午","未"],
   "인오술": ["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"],
-  "사유축": ["寅","卯","辰","巳","午","未","申","酉","戌","亥","子","丑"],
   "신자진": ["巳","午","未","申","酉","戌","亥","子","丑","寅","卯","辰"],
 };
 
@@ -321,20 +321,20 @@ const CHEON_EUL_GUIIN: Record<string, string[]> = {
 };
 
 function getSinsalByBase(baseBranch: string, targetBranch: string): string | null {
-  const groupKey = Object.keys(SINSAL_GROUPS).find(
-    (key) => SINSAL_GROUPS[key].includes(baseBranch)
+  const groupKey = Object.keys(SINSAL_GROUPS).find(key =>
+    SINSAL_GROUPS[key].includes(baseBranch)
   );
   if (!groupKey) return null;
 
+  // 표 1줄
   const row = SINSAL_MATRIX[groupKey];
 
-  const baseIndex = row.indexOf(baseBranch);
+  // targetBranch가 이 줄에서 몇 번째 열에 있는지
   const targetIndex = row.indexOf(targetBranch);
+  if (targetIndex === -1) return null;
 
-  if (baseIndex === -1 || targetIndex === -1) return null;
-
-  const diff = (targetIndex - baseIndex + 12) % 12;
-  return SINSAL_NAMES[diff];
+  // 그 열의 신살 이름 반환
+  return SINSAL_NAMES[targetIndex];
 }
 
 function getCheonEulGuiin(dayStem: string, branches: Record<BranchKey,string>) {
