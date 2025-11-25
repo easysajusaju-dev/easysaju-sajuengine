@@ -599,15 +599,15 @@ export default function ProSajuPage() {
                 <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
                   <span className="font-bold text-sm">신살</span>
                   <span className="text-[11px] text-gray-500">
-                    년지기준 : [연], 일지기준 : [일]
+                    년지기준 : [년], 일지기준 : [일]
                   </span>
                 </div>
 
                 <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
-                  <div>년</div>
-                  <div>월</div>
-                  <div>일</div>
-                  <div>시</div>
+                  <div>년주</div>
+                  <div>월주</div>
+                  <div>일주</div>
+                  <div>시주</div>
                 </div>
 
                 <div className="grid grid-cols-4 text-center py-2">
