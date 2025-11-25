@@ -322,14 +322,15 @@ export default function ProSajuPage() {
 
   // 지장간
   const hidden =
-    hasResult && engineResult
-      ? {
-          year: getJijanggan(engineResult.ganji.year[1]),
-          month: getJijanggan(engineResult.ganji.month[1]),
-          day: getJijanggan(engineResult.ganji.day[1]),
-          hour: getJijanggan(engineResult.ganji.hour[1]),
-        }
-      : null;
+  hasResult && engineResult
+    ? {
+        year: getJijanggan(HANJA_JI_MAP[engineResult.ganji.year[1]]),
+        month: getJijanggan(HANJA_JI_MAP[engineResult.ganji.month[1]]),
+        day: getJijanggan(HANJA_JI_MAP[engineResult.ganji.day[1]]),
+        hour: getJijanggan(HANJA_JI_MAP[engineResult.ganji.hour[1]]),
+      }
+    : null;
+
 
   const sinsal =
     hasResult && engineResult && engineResult.sinsal
