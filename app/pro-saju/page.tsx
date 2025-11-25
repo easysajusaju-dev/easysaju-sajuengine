@@ -614,9 +614,12 @@ export default function ProSajuPage() {
                         {arr.length === 0 ? (
                           <div className="text-gray-400 text-xs">없음</div>
                         ) : (
-                          <div className="space-y-0.5 font-bold">
-                            {arr.join(" ")}
+                          <div className="space-y-0.5 font-bold flex flex-col">
+                           {arr.map((h, i) => (
+                             <div key={i}>{h}</div>
+                            ))}
                           </div>
+
                         )}
                       </div>
                     )
