@@ -622,7 +622,7 @@ export default function ProSajuPage() {
           ) : (
             <div className="space-y-0.5 font-bold flex flex-col items-center">
               {arr.map((h, i) => (
-                <div key={i}>{h}</div>
+                <div key={i} className="block">{h}</div>   {/* ★ 이거 추가 */}
               ))}
             </div>
           )}
