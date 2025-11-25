@@ -434,10 +434,10 @@ function getCheonEulGuiin(dayStem: string, branches: Record<string, string>) {
 
   for (const pos in branches) {
     if (valid.includes(branches[pos])) {
-      result.push(`천을귀인[${positions[pos]}]`);
+      result.push(pos); // 위치만 저장 (year, month 등)
     }
   }
-  return result;
+  return result; // 예: ['month', 'hour']
 }
 
 // 메인 신살 추출 함수
@@ -490,16 +490,7 @@ interface SajuInput {
   hourBranch: string;
   dayStem: string; // 귀인 포함 위해 필수
 }
-    return Array.from(new Set(res));
-  }
 
-  return {
-    year: calcFor(branchesHan.year),
-    month: calcFor(branchesHan.month),
-    day: calcFor(branchesHan.day),
-    hour: calcFor(branchesHan.hour),
-  };
-}
 
 /* ===========================================
  *  지장간 십성 (한 기둥)
