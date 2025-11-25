@@ -63,8 +63,8 @@ interface EngineResponse {
 
 
 // ---- 갑자/지지 ----
-const CHEONGAN = "갑을병정무기경신임계";
-const JIJI = "자축인묘진사오미신유술해";
+const CHEONGAN = "甲乙丙丁戊己庚辛壬癸";
+const JIJI = "子丑寅卯辰巳午未申酉戌亥";
 const GANJI_60: string[] = [];
 
 for (let i = 0; i < 60; i++) {
