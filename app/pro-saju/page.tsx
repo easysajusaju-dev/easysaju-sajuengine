@@ -554,7 +554,7 @@ export default function ProSajuPage() {
       <span className="font-bold text-sm">지장간</span>
 
       {/* 🔥 공망 표시 */}
-      <span className="text-[11px] text-gray-600">
+      <span className="text-[13px] text-gray-600">
         공망 :
         {engineResult?.gongmang
           ? ` ${engineResult.gongmang.year}[년], ${engineResult.gongmang.day}[일]`
@@ -599,7 +599,7 @@ export default function ProSajuPage() {
                 <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
                   <span className="font-bold text-sm">신살</span>
                   <span className="text-[11px] text-gray-500">
-                    년지기준 : [년], 일지기준 : [일]
+                    년지기준 : [연], 일지기준 : [일]
                   </span>
                 </div>
 
