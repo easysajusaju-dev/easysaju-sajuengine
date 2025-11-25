@@ -584,7 +584,7 @@ export default function ProSajuPage() {
                 <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
                   <span className="font-bold text-sm">신살</span>
                   <span className="text-[11px] text-gray-500">
-                    원국 기준
+                    년지기준 : [년], 일지기준 : [일]
                   </span>
                 </div>
 
