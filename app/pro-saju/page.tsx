@@ -17,14 +17,14 @@ interface RelationItem {
   from: "year" | "month" | "day" | "hour";
   to: "year" | "month" | "day" | "hour";
   branches: string;
-  kind: "형" | "충" | "파" | "합";
+  kind: "형" | "충" | "파" | "해";
 }
 
 interface Relations {
   hyung: RelationItem[];
   chung: RelationItem[];
   pa: RelationItem[];
-  hap: RelationItem[];
+  hae: RelationItem[];
 }
 
 interface EngineResponse {
@@ -524,7 +524,7 @@ export default function ProSajuPage() {
                       : "text-gray-400"
                   }
                 >
-                  형·충·파·합
+                  형·충·파·해
                 </span>
               </label>
             </div>
@@ -631,11 +631,11 @@ export default function ProSajuPage() {
               </div>
             )}
 
-            {/* 형충파합 */}
+            {/* 형충파해 */}
             {viewOptions.relations && engineResult.relations && (
               <div className="mx-2 mb-3 bg-yellow-50 rounded-lg border border-yellow-200 shadow-sm">
                 <div className="px-3 py-1.5 border-b flex justify-between">
-                  <span className="font-bold text-sm">형·충·파·합</span>
+                  <span className="font-bold text-sm">형·충·파·해</span>
                   <span className="text-[11px] text-gray-500">
                     원국 기준
                   </span>
@@ -645,11 +645,11 @@ export default function ProSajuPage() {
                   <div>형</div>
                   <div>충</div>
                   <div>파</div>
-                  <div>합</div>
+                  <div>해</div>
                 </div>
 
                 <div className="grid grid-cols-4 text-center pb-2 text-[11px]">
-                  {["hyung", "chung", "pa", "hap"].map((k) => (
+                  {["hyung", "chung", "pa", "hae"].map((k) => (
                     <div
                       key={k}
                       className="border-l first:border-l-0 border-yellow-200 px-2"
