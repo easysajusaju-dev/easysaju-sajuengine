@@ -17,7 +17,7 @@ interface RelationItem {
   from: "year" | "month" | "day" | "hour";
   to: "year" | "month" | "day" | "hour";
   branches: string;
-  kind: "형" | "충" | "파" | "해";
+  kind: "형" | "충" | "파" | "해"| "합";
 }
 
 interface Relations {
@@ -638,7 +638,7 @@ export default function ProSajuPage() {
                 <div className="px-3 py-1.5 border-b flex justify-between">
                   <span className="font-bold text-sm">형·충·파·해·합</span>
                   <span className="text-[11px] text-gray-500">
-                    원국 기준
+                    삼합·방합 제외
                   </span>
                 </div>
 
@@ -650,7 +650,7 @@ export default function ProSajuPage() {
                   <div>합</div>
                 </div>
 
-                <div className="grid grid-cols-5 text-center pb-2 text-[11px]">
+                <div className="grid grid-cols-5 text-center pb-2 text-[10px]">
                   {["hyung", "chung", "pa", "hae", "hap"].map((k) => (
                     <div
                       key={k}
@@ -660,7 +660,7 @@ export default function ProSajuPage() {
                         (engineResult.relations as any)[k].map(
                           (r: RelationItem, i: number) => (
                             <div key={i} className="py-0.5">
-                              <span className="bg-white px-1.5 py-0.5 rounded border border-yellow-300">
+                              <span className="bg-white px-1 py-[1px] rounded border border-yellow-300">
                                 {formatR(r)}
                               </span>
                             </div>
