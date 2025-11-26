@@ -41,6 +41,11 @@ export interface SajuResult {
   guin?: {
     cheonEulGuiin: ("year" | "month" | "day" | "hour")[];
   };
+  // 🔥 공망 추가: 일주/년주 기준
+  gongmang?: {
+    day: string | null;   // 예: "寅卯"
+    year: string | null;  // 예: "寅卯"
+  };
 }
 
 /* ===========================================
@@ -91,6 +96,14 @@ function normalizeBranch(branch: string): string {
   return branchNormalize[branch] ?? branch;
 }
 
+// 🔁 천간도 한글 → 한자로 정규화 (공망 계산에 사용)
+const stemNormalize: Record<string, string> = {
+  갑: "甲", 을: "乙", 병: "丙", 정: "丁", 무: "戊",
+  기: "己", 경: "庚", 신: "辛", 임: "壬", 계: "癸",
+  甲: "甲", 乙: "乙", 丙: "丙", 丁: "丁", 戊: "戊",
+  己: "己", 庚: "庚", 辛: "辛", 壬: "壬", 癸: "癸",
+};
+
 /* ===========================================
  * 지장간
  * ===========================================
@@ -124,7 +137,11 @@ export function getHiddenStems(branch: string): string[] {
 const generate = { 목: "화", 화: "토", 토: "금", 금: "수", 수: "목" };
 const control = { 목: "토", 토: "수", 수: "화", 화: "금", 금: "목" };
 
-export function getSibsung(dayStem: string, target: string, isBranch = false): string {
+export function getSibsung(
+  dayStem: string,
+  target: string,
+  isBranch = false
+): string {
   const myEl = stemElement[dayStem];
   const myYY = stemYinYang[dayStem];
   const targetEl = isBranch ? branchElement[target] : stemElement[target];
@@ -230,14 +247,35 @@ export function calcDaewoon(
 }
 
 /* ===========================================
- * 형·충·파·합
+ * 형·충·파·해·합
  * ===========================================
  */
 
-const HYUNG_SET = new Set(["寅巳","巳寅","寅申","申寅","巳申","申巳","丑戌","戌丑","丑未","未丑","戌未","未戌","子卯","卯子","辰辰","午午","酉酉","亥亥"]);
-const CHUNG_SET = new Set(["子午","午子","丑未","未丑","寅申","申寅","卯酉","酉卯","辰戌","戌辰","巳亥","亥巳"]);
-const PA_SET = new Set(["子酉","酉子","丑辰","辰丑","巳申","申巳","午卯","卯午","亥寅","寅亥","戌未","未戌"]);
-const HAP_SET = new Set(["子未","未子","丑午","午丑","亥申","申亥","戌酉","酉戌","巳寅","寅巳","卯辰","辰卯"]);
+const HYUNG_SET = new Set([
+  "寅巳","巳寅","寅申","申寅","巳申","申巳",
+  "丑戌","戌丑","丑未","未丑","戌未","未戌",
+  "子卯","卯子","辰辰","午午","酉酉","亥亥"
+]);
+const CHUNG_SET = new Set([
+  "子午","午子","丑未","未丑","寅申","申寅",
+  "卯酉","酉卯","辰戌","戌辰","巳亥","亥巳",
+  "甲庚","庚甲","乙辛","辛乙","丙壬","壬丙",
+  "丁癸","癸丁"
+]);
+const PA_SET = new Set([
+  "子酉","酉子","丑辰","辰丑","巳申","申巳",
+  "午卯","卯午","亥寅","寅亥","戌未","未戌"
+]);
+const HAE_SET = new Set([
+  "子未","未子","丑午","午丑","亥申","申亥",
+  "戌酉","酉戌","巳寅","寅巳","卯辰","辰卯"
+]);
+const HAP_SET = new Set([
+  "子丑","丑子","未午","午未","亥寅","寅亥",
+  "戌卯","卯戌","巳申","申巳","酉辰","辰酉",
+  "甲己","己甲","乙庚","庚乙","丙辛","辛丙",
+  "丁壬","壬丁","戊癸","癸戊"
+]);
 
 type BranchKey = "year" | "month" | "day" | "hour";
 
@@ -254,6 +292,7 @@ export function getBranchRelations(input: SajuInput) {
   const hyung: any[] = [];
   const chung: any[] = [];
   const pa: any[] = [];
+  const hae: any[] = [];
   const hap: any[] = [];
 
   function push(list: any[], kind: string, a: BranchKey, bKey: BranchKey) {
@@ -274,11 +313,12 @@ export function getBranchRelations(input: SajuInput) {
       if (HYUNG_SET.has(pair)) push(hyung, "형", a, bb);
       if (CHUNG_SET.has(pair)) push(chung, "충", a, bb);
       if (PA_SET.has(pair)) push(pa, "파", a, bb);
-      if (HAP_SET.has(pair)) push(hap, "합", a, bb);
+      if (HAE_SET.has(pair)) push(hae, "해", a, bb);
+      if (HAP_SET.has(pair)) push(hae, "합", a, bb);
     }
   }
 
-  return { hyung, chung, pa, hap };
+  return { hyung, chung, pa, hae, hap };
 }
 
 /* ===========================================
@@ -326,14 +366,10 @@ function getSinsalByBase(baseBranch: string, targetBranch: string): string | nul
   );
   if (!groupKey) return null;
 
-  // 표 1줄
   const row = SINSAL_MATRIX[groupKey];
-
-  // targetBranch가 이 줄에서 몇 번째 열에 있는지
   const targetIndex = row.indexOf(targetBranch);
   if (targetIndex === -1) return null;
 
-  // 그 열의 신살 이름 반환
   return SINSAL_NAMES[targetIndex];
 }
 
@@ -377,7 +413,7 @@ export function getSinsal(input: SajuInput) {
   (["year", "month", "day", "hour"] as BranchKey[]).forEach(pos => {
     const arr: string[] = [];
 
-    if (yearBaseMap[pos]) arr.push(`${yearBaseMap[pos]}[연]`);
+    if (yearBaseMap[pos]) arr.push(`${yearBaseMap[pos]}[년]`);
     if (dayBaseMap[pos]) arr.push(`${dayBaseMap[pos]}[일]`);
 
     if (guin.includes(pos)) arr.push("천을귀인");
@@ -395,6 +431,46 @@ export function getSinsal(input: SajuInput) {
 
 function getHiddenSibsungForBranch(dayStem: string, branch: string) {
   return getHiddenStems(branch).map(hs => getSibsung(dayStem, hs));
+}
+
+/* ===========================================
+ * 공망 (일주 / 년주)
+ * ===========================================
+ */
+
+// 60갑자 (한자) : 甲子 ~ 癸亥
+const CHEONGAN_HAN = "甲乙丙丁戊己庚辛壬癸";
+const JIJI_HAN = "子丑寅卯辰巳午未申酉戌亥";
+
+const GANJI_60_HAN: string[] = [];
+for (let i = 0; i < 60; i++) {
+  const s = CHEONGAN_HAN[i % 10];
+  const b = JIJI_HAN[i % 12];
+  GANJI_60_HAN.push(s + b);
+}
+
+// 6개 공망 그룹: 0~5 그룹에 대응
+const GONGMANG_GROUPS = [
+  "戌亥", // 甲子 순
+  "申酉", // 甲戌 순
+  "午未", // 甲申 순
+  "辰巳", // 甲午 순
+  "寅卯", // 甲辰 순
+  "子丑", // 甲寅 순
+];
+
+function buildGanjiHanja(stem: string, branch: string): string {
+  const s = stemNormalize[stem] ?? stem;
+  const b = normalizeBranch(branch); // 이미 한자로 들어오면 그대로, 한글이면 변환
+  return s + b;
+}
+
+function getGongmangFor(stem: string, branch: string): string | null {
+  const g = buildGanjiHanja(stem, branch);
+  const idx = GANJI_60_HAN.indexOf(g);
+  if (idx === -1) return null;
+  const groupIdx = Math.floor(idx / 10); // 0~5
+  return GONGMANG_GROUPS[groupIdx] ?? null;
 }
 
 /* ===========================================
@@ -424,7 +500,12 @@ export function calculateSaju(input: SajuInput): SajuResult {
     hour: getTwelve(input.dayStem, input.hourBranch),
   };
 
-  const daewoon = calcDaewoon(input.birth, input.yearStem, input.gender, input.solarTerms);
+  const daewoon = calcDaewoon(
+    input.birth,
+    input.yearStem,
+    input.gender,
+    input.solarTerms
+  );
   const relations = getBranchRelations(input);
 
   const hiddenStems = {
@@ -442,6 +523,12 @@ export function calculateSaju(input: SajuInput): SajuResult {
   };
 
   const sinsal = getSinsal(input);
+
+  // 🔥 공망 계산 (일주 / 년주)
+  const gongmang = {
+    day: getGongmangFor(input.dayStem, input.dayBranch),
+    year: getGongmangFor(input.yearStem, input.yearBranch),
+  };
 
   return {
     ganji: {
@@ -463,5 +550,6 @@ export function calculateSaju(input: SajuInput): SajuResult {
         sinsal[pos as BranchKey].includes("천을귀인")
       ) as BranchKey[],
     },
+    gongmang,
   };
 }
