@@ -16,8 +16,9 @@ interface ManseryeokDebug {
 interface RelationItem {
   from: "year" | "month" | "day" | "hour";
   to: "year" | "month" | "day" | "hour";
-  branches: string;
-  kind: "형" | "충" | "파" | "해";
+  branches?: string;
+  stems?: string;
+  kind: string;
 }
 
 interface Relations {
@@ -25,6 +26,12 @@ interface Relations {
   chung: RelationItem[];
   pa: RelationItem[];
   hae: RelationItem[];
+  hap: RelationItem[];
+
+  stemChung?: RelationItem[];
+  stemHap?: RelationItem[];
+  samhap?: any[];
+  banghap?: any[];
 }
 
 interface EngineResponse {
@@ -52,7 +59,6 @@ interface EngineResponse {
       hour: string[];
     };
 
-    // 🔥 공망 추가
     gongmang?: {
       year: string | null;
       day: string | null;
@@ -60,7 +66,6 @@ interface EngineResponse {
   };
   error?: string;
 }
-
 
 // ---- 갑자/지지 ----
 const CHEONGAN = "甲乙丙丁戊己庚辛壬癸";
@@ -136,7 +141,6 @@ export default function ProSajuPage() {
   const [selectedYear, setSelectedYear] = useState(
     new Date().getFullYear()
   );
-
   // ---- handleSubmit ----
   async function handleSubmit(formData: {
     gender: Gender;
@@ -298,6 +302,67 @@ export default function ProSajuPage() {
       hour: "시",
     }[r.to]} (${r.branches})`;
 
+  // ★★★ 합 전체(육합·천간합·삼합·방합) 통합 리스트 만들기 ★★★
+  const mergedHapList = (() => {
+    if (!engineResult?.relations) return [];
+    const REL = engineResult.relations;
+    const list: any[] = [];
+
+    // 1) 육합 → [육]
+    REL.hap?.forEach((h) =>
+      list.push({
+        label: "[육]",
+        text: formatR(h),
+      })
+    );
+
+    // 2) 천간합 → [천]
+    REL.stemHap?.forEach((h) =>
+      list.push({
+        label: "[천]",
+        text: `${{
+          year: "년",
+          month: "월",
+          day: "일",
+          hour: "시",
+        }[h.from]}-${{
+          year: "년",
+          month: "월",
+          day: "일",
+          hour: "시",
+        }[h.to]} (${h.stems})`,
+      })
+    );
+
+    // 3) 삼합 → [삼]
+    REL.samhap?.forEach((h) =>
+      list.push({
+        label: "[삼]",
+        text: `(${h.groupText}) ${h.positions
+          .map(
+            (p: string) =>
+              ({ year: "년", month: "월", day: "일", hour: "시" }[p])
+          )
+          .join("-")}`,
+      })
+    );
+
+    // 4) 방합 → [방]
+    REL.banghap?.forEach((h) =>
+      list.push({
+        label: "[방]",
+        text: `(${h.groupText}) ${h.positions
+          .map(
+            (p: string) =>
+              ({ year: "년", month: "월", day: "일", hour: "시" }[p])
+          )
+          .join("-")}`,
+      })
+    );
+
+    return list;
+  })();
+
   // 세운 자동 스크롤
   useEffect(() => {
     if (engineResult && seunRef.current) {
@@ -313,7 +378,6 @@ export default function ProSajuPage() {
       }, 300);
     }
   }, [engineResult, selectedYear]);
-
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center text-gray-900 select-none font-sans">
       <div className="w-full max-w-md bg-white shadow-xl min-h-screen md:min-h-0 md:h-auto md:my-5 md:rounded-xl overflow-hidden">
@@ -344,13 +408,12 @@ export default function ProSajuPage() {
         )}
 
         {/* 입력폼 */}
-        {isFormOpen && (
-          <EasySajuInputCard onSubmit={handleSubmit} loading={loading} />
-        )}
+        {isFormOpen && <EasySajuInputCard onSubmit={handleSubmit} loading={loading} />}
 
         {/* 결과 화면 */}
         {hasResult && !isFormOpen && engineResult && debugData && (
           <main className="bg-slate-50 pb-20">
+
             {/* 요약 카드 */}
             <div className="bg-white p-5 border-b border-gray-200 shadow-sm mb-3">
               <div className="flex items-center gap-3">
@@ -376,14 +439,12 @@ export default function ProSajuPage() {
                       {userName || debugData.input.name || "이름"}
                     </span>
                     <span className="text-sm text-gray-600">
-                      {debugData.input.isMale ? "남" : "여"},{" "}
-                      {koreanAge}세
+                      {debugData.input.isMale ? "남" : "여"}, {koreanAge}세
                     </span>
                   </div>
 
                   <div className="text-xs text-gray-400">
-                    (양) {debugData.finalResult.solarText} / (음){" "}
-                    {debugData.finalResult.lunarText}
+                    (양) {debugData.finalResult.solarText}(-30분) / (음) {debugData.finalResult.lunarText}
                   </div>
                 </div>
               </div>
@@ -410,9 +471,7 @@ export default function ProSajuPage() {
                       className="py-2 flex flex-col items-center border-r last:border-r-0"
                     >
                       <span className="text-sm text-indigo-700 font-bold mb-1">
-                        {col === "day"
-                          ? "일간(나)"
-                          : engineResult.sibsung[col]}
+                        {col === "day" ? "일간(나)" : engineResult.sibsung[col]}
                       </span>
                       <div
                         className={`w-full max-w-[90px] aspect-square flex items-center justify-center text-[2.3rem] rounded shadow-sm border ${s.bg} ${s.border}`}
@@ -472,7 +531,7 @@ export default function ProSajuPage() {
               </div>
             </div>
 
-            {/* 표시 옵션 체크박스 */}
+            {/* 표시 옵션 */}
             <div className="mx-2 mb-3 bg-white rounded-lg border px-3 py-2 flex flex-wrap gap-3">
               <label className="flex items-center gap-1 text-xs">
                 <input
@@ -481,13 +540,7 @@ export default function ProSajuPage() {
                   onChange={() => toggleView("five")}
                   className="w-3 h-3"
                 />
-                <span
-                  className={
-                    viewOptions.five
-                      ? "text-indigo-600 font-semibold"
-                      : "text-gray-400"
-                  }
-                >
+                <span className={viewOptions.five ? "text-indigo-600 font-semibold" : "text-gray-400"}>
                   오행 분포
                 </span>
               </label>
@@ -499,13 +552,7 @@ export default function ProSajuPage() {
                   onChange={() => toggleView("hidden")}
                   className="w-3 h-3"
                 />
-                <span
-                  className={
-                    viewOptions.hidden
-                      ? "text-indigo-600 font-semibold"
-                      : "text-gray-400"
-                  }
-                >
+                <span className={viewOptions.hidden ? "text-indigo-600 font-semibold" : "text-gray-400"}>
                   지장간·신살
                 </span>
               </label>
@@ -517,14 +564,8 @@ export default function ProSajuPage() {
                   onChange={() => toggleView("relations")}
                   className="w-3 h-3"
                 />
-                <span
-                  className={
-                    viewOptions.relations
-                      ? "text-indigo-600 font-semibold"
-                      : "text-gray-400"
-                  }
-                >
-                  형·충·파·해
+                <span className={viewOptions.relations ? "text-indigo-600 font-semibold" : "text-gray-400"}>
+                  형·충·파·해·합
                 </span>
               </label>
             </div>
@@ -532,9 +573,7 @@ export default function ProSajuPage() {
             {/* 오행 분포 */}
             {viewOptions.five && five && (
               <div className="mx-2 mb-3 bg-white rounded-lg p-3 border shadow-sm">
-                <div className="font-bold text-gray-700 text-sm mb-2">
-                  오행 분포
-                </div>
+                <div className="font-bold text-gray-700 text-sm mb-2">오행 분포</div>
                 <div className="flex justify-between text-sm font-semibold">
                   <span>목(木) {five.목}</span>
                   <span>화(火) {five.화}</span>
@@ -545,53 +584,46 @@ export default function ProSajuPage() {
               </div>
             )}
 
-           {/* 지장간 */}
-{viewOptions.hidden && hidden && (
-  <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
+            {/* 지장간 */}
+            {viewOptions.hidden && hidden && (
+              <div className="mx-2 mb-3 bg-white rounded-lg border shadow-sm">
 
-    {/* 제목 + 공망 */}
-    <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
-      <span className="font-bold text-sm">지장간</span>
-
-      {/* 🔥 공망 표시 */}
-      <span className="text-[13px] text-gray-600">
-        공망 :
-        {engineResult?.gongmang
-          ? ` ${engineResult.gongmang.year}[년], ${engineResult.gongmang.day}[일]`
-          : " -"}
-      </span>
-    </div>
-
-    <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
-      <div>년주</div>
-      <div>월주</div>
-      <div>일주</div>
-      <div>시주</div>
-    </div>
-
-    <div className="grid grid-cols-4 text-center py-2 text-sm">
-      {[hidden.year, hidden.month, hidden.day, hidden.hour].map((arr, idx) => (
-        <div
-          key={idx}
-          className="border-r last:border-r-0 flex flex-col items-center"
-        >
-          {(!arr || arr.length === 0) ? (
-            <div className="text-gray-400 text-xs">없음</div>
-          ) : (
-            <div className="font-bold flex flex-col items-center space-y-0.5 leading-tight">
-              {arr.map((h, i) => (
-                <div key={i} className="block">
-                  {h}
+                <div className="flex justify-between px-3 py-2 border-b bg-indigo-50">
+                  <span className="font-bold text-sm">지장간</span>
+                  <span className="text-[13px] text-gray-600">
+                    공망 :
+                    {engineResult?.gongmang
+                      ? ` ${engineResult.gongmang.year}[년], ${engineResult.gongmang.day}[일]`
+                      : " -"}
+                  </span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  </div>
-)}
 
+                <div className="grid grid-cols-4 text-center py-2 border-b text-xs font-bold text-gray-600">
+                  <div>년주</div>
+                  <div>월주</div>
+                  <div>일주</div>
+                  <div>시주</div>
+                </div>
+
+                <div className="grid grid-cols-4 text-center py-2 text-sm">
+                  {[hidden.year, hidden.month, hidden.day, hidden.hour].map((arr, idx) => (
+                    <div key={idx} className="border-r last:border-r-0 flex flex-col items-center">
+                      {!arr || arr.length === 0 ? (
+                        <div className="text-gray-400 text-xs">없음</div>
+                      ) : (
+                        <div className="font-bold flex flex-col items-center space-y-0.5 leading-tight">
+                          {arr.map((h, i) => (
+                            <div key={i} className="block">
+                              {h}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 신살 */}
             {viewOptions.hidden && sinsal && (
@@ -631,44 +663,103 @@ export default function ProSajuPage() {
               </div>
             )}
 
-            {/* 형충파해 */}
+            {/* 형충파해합 — ★ 통합합 완성 버전 ★ */}
             {viewOptions.relations && engineResult.relations && (
               <div className="mx-2 mb-3 bg-yellow-50 rounded-lg border border-yellow-200 shadow-sm">
                 <div className="px-3 py-1.5 border-b flex justify-between">
-                  <span className="font-bold text-sm">형·충·파·해</span>
+                  <span className="font-bold text-sm">형·충·파·해·합</span>
                   <span className="text-[11px] text-gray-500">
-                    원국 기준
+                    합 = 육합·천간합·삼합·방합 전체
                   </span>
                 </div>
 
-                <div className="grid grid-cols-4 text-center py-1 text-xs font-bold text-gray-700">
+                {/* 상단 제목 */}
+                <div className="grid grid-cols-5 text-center py-1 text-xs font-bold text-gray-700">
                   <div>형</div>
                   <div>충</div>
                   <div>파</div>
                   <div>해</div>
+                  <div>합</div>
                 </div>
 
-                <div className="grid grid-cols-4 text-center pb-2 text-[11px]">
-                  {["hyung", "chung", "pa", "hae"].map((k) => (
-                    <div
-                      key={k}
-                      className="border-l first:border-l-0 border-yellow-200 px-2"
-                    >
-                      {(engineResult.relations as any)[k]?.length > 0 ? (
-                        (engineResult.relations as any)[k].map(
-                          (r: RelationItem, i: number) => (
-                            <div key={i} className="py-0.5">
-                              <span className="bg-white px-1.5 py-0.5 rounded border border-yellow-300">
-                                {formatR(r)}
-                              </span>
-                            </div>
-                          )
-                        )
-                      ) : (
-                        <div className="text-gray-400 py-1">-</div>
-                      )}
-                    </div>
-                  ))}
+                {/* 본문 */}
+                <div className="grid grid-cols-5 text-center pb-2 text-[10px] leading-tight">
+                  {/* 형 */}
+                  <div className="border-l first:border-l-0 border-yellow-200 px-1">
+                    {engineResult.relations.hyung.length > 0 ? (
+                      engineResult.relations.hyung.map((r, i) => (
+                        <div key={i} className="py-0.5">
+                          <span className="bg-white px-1 py-[1px] rounded border border-yellow-300">
+                            {formatR(r)}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-gray-400 py-1">-</div>
+                    )}
+                  </div>
+
+                  {/* 충 */}
+                  <div className="border-l border-yellow-200 px-1">
+                    {engineResult.relations.chung.length > 0 ? (
+                      engineResult.relations.chung.map((r, i) => (
+                        <div key={i} className="py-0.5">
+                          <span className="bg-white px-1 py-[1px] rounded border border-yellow-300">
+                            {formatR(r)}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-gray-400 py-1">-</div>
+                    )}
+
+                    {/* 천간충도 필요하면 여기에 추가 */}
+                  </div>
+
+                  {/* 파 */}
+                  <div className="border-l border-yellow-200 px-1">
+                    {engineResult.relations.pa.length > 0 ? (
+                      engineResult.relations.pa.map((r, i) => (
+                        <div key={i} className="py-0.5">
+                          <span className="bg-white px-1 py-[1px] rounded border border-yellow-300">
+                            {formatR(r)}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-gray-400 py-1">-</div>
+                    )}
+                  </div>
+
+                  {/* 해 */}
+                  <div className="border-l border-yellow-200 px-1">
+                    {engineResult.relations.hae.length > 0 ? (
+                      engineResult.relations.hae.map((r, i) => (
+                        <div key={i} className="py-0.5">
+                          <span className="bg-white px-1 py-[1px] rounded border border-yellow-300">
+                            {formatR(r)}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-gray-400 py-1">-</div>
+                    )}
+                  </div>
+
+                  {/* ★ 합 — 육합 + 천간합 + 삼합 + 방합 */}
+                  <div className="border-l border-yellow-200 px-1">
+                    {mergedHapList.length > 0 ? (
+                      mergedHapList.map((h, i) => (
+                        <div key={i} className="py-0.5 text-[10px]">
+                          <span className="bg-white px-1 py-[1px] rounded border border-yellow-300 whitespace-nowrap">
+                            {h.label} {h.text}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-gray-400 py-1">-</div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -678,57 +769,48 @@ export default function ProSajuPage() {
               <div className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-t-lg flex justify-between">
                 <span>대운 (대운수: {debugData.finalResult.daeNum})</span>
                 <span>
-                  {engineResult.daewoon.direction === "forward"
-                    ? "순행"
-                    : "역행"}
+                  {engineResult.daewoon.direction === "forward" ? "순행" : "역행"}
                 </span>
               </div>
 
               <div className="bg-white border border-gray-200 rounded-b-lg px-2 py-1 overflow-x-auto">
                 <div className="flex gap-1 min-w-[360px]">
-                  {debugData.finalResult.daeWoonYear.map(
-                    (startYear: number, i: number) => {
-                      const age = debugData.finalResult.daeNum + i * 10;
-                      const isCur =
-                        koreanAge >= age && koreanAge < age + 10;
+                  {debugData.finalResult.daeWoonYear.map((startYear: number, i: number) => {
+                    const age = debugData.finalResult.daeNum + i * 10;
+                    const isCur = koreanAge >= age && koreanAge < age + 10;
 
-                      const [s, b] =
-                        debugData.finalResult.daeWoonGanji[i].split("");
+                    const [s, b] = debugData.finalResult.daeWoonGanji[i].split("");
+                    const sS = getOhaengStyles(s);
+                    const bS = getOhaengStyles(b);
 
-                      const sS = getOhaengStyles(s);
-                      const bS = getOhaengStyles(b);
-
-                      return (
-                        <div
-                          key={i}
-                          className={`flex flex-col items-center px-1 py-0.5 rounded-lg ${
-                            isCur
-                              ? "ring-2 ring-blue-500 bg-blue-50 scale-105 shadow-md"
-                              : "hover:bg-gray-50"
+                    return (
+                      <div
+                        key={i}
+                        className={`flex flex-col items-center px-1 py-0.5 rounded-lg ${
+                          isCur ? "ring-2 ring-blue-500 bg-blue-50 scale-105 shadow-md" : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <span
+                          className={`text-[12px] font-bold mb-1 ${
+                            isCur ? "text-blue-700" : "text-gray-400"
                           }`}
                         >
-                          <span
-                            className={`text-[12px] font-bold mb-1 ${
-                              isCur ? "text-blue-700" : "text-gray-400"
-                            }`}
-                          >
-                            {age}
-                          </span>
+                          {age}
+                        </span>
 
-                          <div
-                            className={`w-10 h-10 flex items-center justify-center text-xl border rounded ${sS.bg} ${sS.border}`}
-                          >
-                            {s}
-                          </div>
-                          <div
-                            className={`w-10 h-10 flex items-center justify-center text-xl border rounded mt-1 ${bS.bg} ${bS.border}`}
-                          >
-                            {b}
-                          </div>
+                        <div
+                          className={`w-10 h-10 flex items-center justify-center text-xl border rounded ${sS.bg} ${sS.border}`}
+                        >
+                          {s}
                         </div>
-                      );
-                    }
-                  )}
+                        <div
+                          className={`w-10 h-10 flex items-center justify-center text-xl border rounded mt-1 ${bS.bg} ${bS.border}`}
+                        >
+                          {b}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -756,9 +838,7 @@ export default function ProSajuPage() {
                         id={`year-${e.year}`}
                         onClick={() => setSelectedYear(e.year)}
                         className={`flex flex-col items-center px-1 mx-1 py-1 rounded-lg cursor-pointer ${
-                          isSel
-                            ? "bg-gray-100 ring-2 ring-gray-800 scale-110 shadow-md"
-                            : "hover:bg-gray-50"
+                          isSel ? "bg-gray-100 ring-2 ring-gray-800 scale-110 shadow-md" : "hover:bg-gray-50"
                         }`}
                       >
                         <span
@@ -780,9 +860,7 @@ export default function ProSajuPage() {
                           {b}
                         </div>
 
-                        <span className="text-[12px] text-gray-500 mt-1">
-                          {e.age}세
-                        </span>
+                        <span className="text-[12px] text-gray-500 mt-1">{e.age}세</span>
                       </div>
                     );
                   })}
@@ -804,13 +882,8 @@ export default function ProSajuPage() {
                     const bS = getOhaengStyles(b);
 
                     return (
-                      <div
-                        key={e.month}
-                        className="flex flex-col items-center mx-2 min-w-[44px]"
-                      >
-                        <span className="text-[12px] font-bold text-gray-600 mb-1">
-                          {e.month}월
-                        </span>
+                      <div key={e.month} className="flex flex-col items-center mx-2 min-w-[44px]">
+                        <span className="text-[12px] font-bold text-gray-600 mb-1">{e.month}월</span>
                         <div
                           className={`w-9 h-9 flex items-center justify-center text-lg rounded shadow-sm border ${sS.bg} ${sS.border}`}
                         >
@@ -827,6 +900,7 @@ export default function ProSajuPage() {
                 </div>
               </div>
             </div>
+
           </main>
         )}
       </div>
