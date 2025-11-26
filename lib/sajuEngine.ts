@@ -314,7 +314,7 @@ export function getBranchRelations(input: SajuInput) {
       if (CHUNG_SET.has(pair)) push(chung, "충", a, bb);
       if (PA_SET.has(pair)) push(pa, "파", a, bb);
       if (HAE_SET.has(pair)) push(hae, "해", a, bb);
-      if (HAP_SET.has(pair)) push(hae, "합", a, bb);
+      if (HAP_SET.has(pair)) push(hap, "합", a, bb);
     }
   }
 
