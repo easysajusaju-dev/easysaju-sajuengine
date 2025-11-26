@@ -247,31 +247,78 @@ export function calcDaewoon(
 }
 
 /* ===========================================
- * 형·충·파·해
- * ===========================================
+ * 형·충·파·해·합 + 천간충/합 + 삼합/방합
+ * =========================================== 
  */
 
+// 👉 지지 기준 형·충·파·해·육합 (2지지)
 const HYUNG_SET = new Set([
   "寅巳","巳寅","寅申","申寅","巳申","申巳",
   "丑戌","戌丑","丑未","未丑","戌未","未戌",
   "子卯","卯子","辰辰","午午","酉酉","亥亥"
 ]);
+
 const CHUNG_SET = new Set([
   "子午","午子","丑未","未丑","寅申","申寅",
   "卯酉","酉卯","辰戌","戌辰","巳亥","亥巳"
 ]);
+
 const PA_SET = new Set([
   "子酉","酉子","丑辰","辰丑","巳申","申巳",
   "午卯","卯午","亥寅","寅亥","戌未","未戌"
 ]);
+
 const HAE_SET = new Set([
   "子未","未子","丑午","午丑","亥申","申亥",
   "戌酉","酉戌","巳寅","寅巳","卯辰","辰卯"
 ]);
 
+// 👉 지지 육합(六合)만 분리 (2지지)
+const HAP_SET = new Set([
+  "子丑","丑子",
+  "寅亥","亥寅",
+  "卯戌","戌卯",
+  "辰酉","酉辰",
+  "巳申","申巳",
+  "午未","未午"
+]);
+
+// 👉 천간 충(沖)·합(合) 세트 (2천간)
+const STEM_CHUNG_SET = new Set([
+  "甲庚","庚甲",
+  "乙辛","辛乙",
+  "丙壬","壬丙",
+  "丁癸","癸丁"
+]);
+
+const STEM_HAP_SET = new Set([
+  "甲己","己甲",
+  "乙庚","庚乙",
+  "丙辛","辛丙",
+  "丁壬","壬丁",
+  "戊癸","癸戊"
+]);
+
+// 👉 삼합(三合) 그룹 (3지지)
+const SAMHAP_GROUPS: string[][] = [
+  ["申","子","辰"], // 신자진(水)
+  ["亥","卯","未"], // 해묘미(木)
+  ["寅","午","戌"], // 인오술(火)
+  ["巳","酉","丑"], // 사유축(金)
+];
+
+// 👉 방합(方合) 그룹 (3지지)
+const BANGHAP_GROUPS: string[][] = [
+  ["亥","子","丑"], // 해자축(水, 북방)
+  ["寅","卯","辰"], // 인묘진(木, 동방)
+  ["巳","午","未"], // 사오미(火, 남방)
+  ["申","酉","戌"], // 신유술(金, 서방)
+];
+
 type BranchKey = "year" | "month" | "day" | "hour";
 
 export function getBranchRelations(input: SajuInput) {
+  // 지지(한글 → 한자 정규화)
   const b: Record<BranchKey, string> = {
     year: normalizeBranch(input.yearBranch),
     month: normalizeBranch(input.monthBranch),
@@ -279,37 +326,126 @@ export function getBranchRelations(input: SajuInput) {
     hour: normalizeBranch(input.hourBranch),
   };
 
+  // 천간(한글 → 한자 정규화)
+  const s: Record<BranchKey, string> = {
+    year: stemNormalize[input.yearStem] ?? input.yearStem,
+    month: stemNormalize[input.monthStem] ?? input.monthStem,
+    day: stemNormalize[input.dayStem] ?? input.dayStem,
+    hour: stemNormalize[input.hourStem] ?? input.hourStem,
+  };
+
   const keys: BranchKey[] = ["year", "month", "day", "hour"];
 
+  // 지지 관계
   const hyung: any[] = [];
   const chung: any[] = [];
   const pa: any[] = [];
   const hae: any[] = [];
+  const hap: any[] = [];
 
-  function push(list: any[], kind: string, a: BranchKey, bKey: BranchKey) {
+  // 천간 관계
+  const stemChung: any[] = [];
+  const stemHap: any[] = [];
+
+  // 삼합 / 방합 (3지지)
+  const samhap: any[] = [];
+  const banghap: any[] = [];
+
+  // ⬇ 지지 2개 관계 push
+  function pushBranch(list: any[], kind: string, a: BranchKey, bKey: BranchKey) {
     list.push({
       from: a,
       to: bKey,
       branches: b[a] + b[bKey],
-      kind,
+      kind,         // "형", "충", "파", "해", "합"
     });
   }
 
+  // ⬇ 천간 2개 관계 push
+  function pushStem(list: any[], kind: string, a: BranchKey, bKey: BranchKey) {
+    list.push({
+      from: a,
+      to: bKey,
+      stems: s[a] + s[bKey],
+      kind,         // "천간충", "천간합"
+    });
+  }
+
+  // ================================
+  // 1) 2간지/2천간 관계 (형·충·파·해·육합 + 천간충/합)
+  // ================================
   for (let i = 0; i < keys.length; i++) {
     for (let j = i + 1; j < keys.length; j++) {
       const a = keys[i];
       const bb = keys[j];
-      const pair = b[a] + b[bb];
 
-      if (HYUNG_SET.has(pair)) push(hyung, "형", a, bb);
-      if (CHUNG_SET.has(pair)) push(chung, "충", a, bb);
-      if (PA_SET.has(pair)) push(pa, "파", a, bb);
-      if (HAE_SET.has(pair)) push(hae, "해", a, bb);
+      const pairBranch = b[a] + b[bb];
+      const pairStem = s[a] + s[bb];
+
+      // 지지 관계
+      if (HYUNG_SET.has(pairBranch)) pushBranch(hyung, "형", a, bb);
+      if (CHUNG_SET.has(pairBranch)) pushBranch(chung, "충", a, bb);
+      if (PA_SET.has(pairBranch))    pushBranch(pa, "파", a, bb);
+      if (HAE_SET.has(pairBranch))   pushBranch(hae, "해", a, bb);
+      if (HAP_SET.has(pairBranch))   pushBranch(hap, "합", a, bb); // 육합
+
+      // 천간 관계
+      if (STEM_CHUNG_SET.has(pairStem)) pushStem(stemChung, "천간충", a, bb);
+      if (STEM_HAP_SET.has(pairStem))   pushStem(stemHap, "천간합", a, bb);
     }
   }
 
-  return { hyung, chung, pa, hae };
+  // ================================
+  // 2) 삼합 / 방합 (3지지)
+  // ================================
+  function collectTri(
+    groups: string[][],
+    kind: "삼합" | "방합",
+    target: any[]
+  ) {
+    for (const group of groups) {
+      const positions: BranchKey[] = [];
+
+      for (const k of keys) {
+        if (group.includes(b[k])) {
+          positions.push(k);
+        }
+      }
+
+      // 네 기둥(년월일시) 중에 해당 그룹 3지지가 모두 존재할 때만 인정
+      if (positions.length === group.length) {
+        target.push({
+          kind,                    // "삼합" or "방합"
+          group,                   // ["申","子","辰"]
+          groupText: group.join(""), // "申子辰"
+          positions,               // ["year","month","hour"] 등
+        });
+      }
+    }
+  }
+
+  collectTri(SAMHAP_GROUPS, "삼합", samhap);
+  collectTri(BANGHAP_GROUPS, "방합", banghap);
+
+  // ================================
+  // 3) 최종 반환
+  // ================================
+  return {
+    // 기존 프론트에서 쓰는 애들
+    hyung,
+    chung,
+    pa,
+    hae,
+    hap,
+
+    // 새로 추가된 것들
+    stemChung,  // 천간충
+    stemHap,    // 천간합
+    samhap,     // 삼합
+    banghap,    // 방합
+  };
 }
+
 
 /* ===========================================
  * 신살
@@ -403,7 +539,7 @@ export function getSinsal(input: SajuInput) {
   (["year", "month", "day", "hour"] as BranchKey[]).forEach(pos => {
     const arr: string[] = [];
 
-    if (yearBaseMap[pos]) arr.push(`${yearBaseMap[pos]}[연]`);
+    if (yearBaseMap[pos]) arr.push(`${yearBaseMap[pos]}[년]`);
     if (dayBaseMap[pos]) arr.push(`${dayBaseMap[pos]}[일]`);
 
     if (guin.includes(pos)) arr.push("천을귀인");
