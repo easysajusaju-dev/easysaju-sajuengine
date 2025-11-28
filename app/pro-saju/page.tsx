@@ -436,7 +436,7 @@ export default function ProSajuPage() {
 
         {/* 결과 화면 */}
         {hasResult && !isFormOpen && engineResult && debugData && (
-          <main className="bg-slate-50 pb-20">
+          <main className="bg-slate-50 pb-4">
 
             {/* 요약 카드 */}
             <div className="bg-white p-5 border-b border-gray-200 shadow-sm mb-3">
