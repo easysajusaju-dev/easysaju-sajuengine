@@ -893,7 +893,7 @@ export default function ProSajuPage() {
             </div>
 
             {/* 월운 */}
-            <div className="mx-2 mb-10">
+            <div className="mx-2 mb-2">
               <div className="bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-t-lg">
                 월운 ({selectedYear}년)
               </div>
