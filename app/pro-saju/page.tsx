@@ -115,6 +115,30 @@ function getOhaengStyles(ch: string) {
     return { bg: "bg-sky-400", border: "border-sky-700" };
   return { bg: "bg-gray-200", border: "border-gray-300" };
 }
+function BusinessInfo() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="mt-1">
+      <div
+        onClick={() => setOpen(!open)}
+        className="cursor-pointer text-gray-700 mb-2"
+      >
+        이지사주 사업자정보 <span>{open ? "▲" : "▼"}</span>
+      </div>
+
+      {open && (
+        <div className="text-gray-500 text-[11px] leading-relaxed">
+          <p>상호명: 이지사주 | 대표: 안미정</p>
+          <p>사업자등록번호: 550-64-00884</p>
+          <p>통신판매번호: 제2025-고양일산동-1332호</p>
+          <p>이메일: easysaju.saju@gmail.com</p>
+          <p>전화: 010-2151-3949</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ---- 본문 컴포넌트 ----
 export default function ProSajuPage() {
