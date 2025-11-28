@@ -907,19 +907,19 @@ export default function ProSajuPage() {
           <footer className="footer mt-8 text-center text-xs text-gray-500">
             <div className="social-icons flex justify-center gap-4 mb-3">
               <a href="http://pf.kakao.com/_xkAevn" target="_blank">
-                <img src="images/kakaotalk.png" alt="카카오채널" />
+                <img src="/images/kakaotalk.png" alt="카카오채널" />
               </a>
               <a href="https://www.threads.net/@easy.saju" target="_blank">
-                <img src="images/threads.png" alt="스레드" />
+                <img src="/images/threads.png" alt="스레드" />
               </a>
               <a href="https://www.instagram.com/easy.saju" target="_blank">
-                <img src="images/instagram.png" alt="인스타" />
+                <img src="/images/instagram.png" alt="인스타" />
               </a>
               <a href="https://www.youtube.com/channel/UCLQGqG5Vy2WcTaKbvYOwHLA?sub_confirmation=1" target="_blank">
-                <img src="images/youtube.png" alt="유튜브" />
+                <img src="/images/youtube.png" alt="유튜브" />
               </a>
               <a href="https://www.tiktok.com/@easysaju" target="_blank">
-                <img src="images/tiktok.png" alt="틱톡" />
+                <img src="/images/tiktok.png" alt="틱톡" />
               </a>
             </div>
 
