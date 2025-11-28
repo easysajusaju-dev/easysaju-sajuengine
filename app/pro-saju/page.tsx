@@ -903,6 +903,49 @@ export default function ProSajuPage() {
 
           </main>
         )}
+         {/* ⭐⭐⭐ Footer starts here ⭐⭐⭐ */}
+          <footer className="footer mt-8 text-center text-xs text-gray-500">
+            <div className="social-icons flex justify-center gap-4 mb-3">
+              <a href="http://pf.kakao.com/_xkAevn" target="_blank">
+                <img src="images/kakaotalk.png" alt="카카오채널" />
+              </a>
+              <a href="https://www.threads.net/@easy.saju" target="_blank">
+                <img src="images/threads.png" alt="스레드" />
+              </a>
+              <a href="https://www.instagram.com/easy.saju" target="_blank">
+                <img src="images/instagram.png" alt="인스타" />
+              </a>
+              <a href="https://www.youtube.com/channel/UCLQGqG5Vy2WcTaKbvYOwHLA?sub_confirmation=1" target="_blank">
+                <img src="images/youtube.png" alt="유튜브" />
+              </a>
+              <a href="https://www.tiktok.com/@easysaju" target="_blank">
+                <img src="images/tiktok.png" alt="틱톡" />
+              </a>
+            </div>
+
+            <div className="footer-links flex justify-center text-gray-600 mb-1 gap-2">
+              <a href="terms.html">이용약관</a>
+              <span>·</span>
+              <a href="privacy.html">개인정보처리방침</a>
+            </div>
+
+            <div className="info-toggle cursor-pointer mb-2" id="info-toggle-button">
+              이지사주 사업자정보 <span id="info-arrow">▼</span>
+            </div>
+
+            <div className="info-details hidden mb-2" id="business-info-details">
+              <p>상호명: 이지사주 | 대표: 안미정</p>
+              <p>사업자등록번호: 550-64-00884</p>
+              <p>통신판매번호: 제2025-고양일산동-1332호</p>
+              <p>이메일: easysaju.saju@gmail.com</p>
+              <p>전화: 010-2151-3949</p>
+            </div>
+
+            <p className="copyright text-gray-400">
+              © 2025 이지사주. All rights reserved.
+            </p>
+          </footer>
+          {/* ⭐⭐⭐ Footer ends here ⭐⭐⭐ */}
       </div>
     </div>
   );
