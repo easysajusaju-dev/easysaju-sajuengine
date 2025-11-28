@@ -112,7 +112,7 @@ export default function PrivacyPage() {
         </p>
 
         <h2 className="font-bold text-lg mt-6 mb-2">12. 부칙</h2>
-        <p>본 방침은 2024년 10월 1일부터 시행됩니다.</p>
+        <p>본 방침은 2025년 10월 1일부터 시행됩니다.</p>
 
       </main>
     </div>
