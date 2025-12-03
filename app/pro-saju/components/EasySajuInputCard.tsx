@@ -11,18 +11,15 @@ export default function EasySajuInputCard({ onSubmit, loading }: any) {
   const [isLeap, setIsLeap] = useState(false);
   const [unknownTime, setUnknownTime] = useState(false);
 
-  // ⭐ 진짜 submit 핸들러 (폼 이벤트)
-  const handleLocalSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleSubmit = () => {
     if (!name || !birthdate) {
       alert("이름과 생년월일을 입력해주세요!");
       return;
     }
 
     onSubmit({
-      gender,
       name,
+      gender,
       birthdate,
       birthtime,
       isLunar,
@@ -33,12 +30,6 @@ export default function EasySajuInputCard({ onSubmit, loading }: any) {
 
   return (
     <div className="w-full max-w-xl mx-auto">
-      {/* ====== 헤더 ====== */}
-      <div className="sticky top-0 bg-white z-20 border-b">
-        <div className="flex items-center justify-center py-4 relative">
-          <h1 className="text-lg font-semibold">만세력 확인</h1>
-        </div>
-      </div>
 
       {/* ====== 배너 ====== */}
       <div className="relative h-40 w-full mb-6">
@@ -50,19 +41,15 @@ export default function EasySajuInputCard({ onSubmit, loading }: any) {
         <div className="relative z-10 p-4 text-white">
           <p className="text-sm opacity-90">당신의 운명을 풀어내는 곳</p>
           <h2 className="text-3xl font-bold mt-1">이지사주</h2>
-          <p className="text-base opacity-95">만세력 조회</p>
+          <p className="text-base opacity-95">생년월일시등 정보를 입력하세요</p>
         </div>
       </div>
 
       {/* ====== 입력 카드 ====== */}
-      <form
-        onSubmit={handleLocalSubmit}
-        className="bg-white rounded-xl shadow p-5 space-y-4 mb-10"
-      >
+      <div className="bg-white rounded-xl shadow p-5 space-y-4 mb-10">
         {/* 성별 */}
         <div className="grid grid-cols-2 rounded-md bg-gray-100 p-1">
           <button
-            type="button"
             className={`py-2 rounded-md font-semibold ${
               gender === "M" ? "bg-white shadow" : "text-gray-500"
             }`}
@@ -71,7 +58,6 @@ export default function EasySajuInputCard({ onSubmit, loading }: any) {
             남자
           </button>
           <button
-            type="button"
             className={`py-2 rounded-md font-semibold ${
               gender === "F" ? "bg-white shadow" : "text-gray-500"
             }`}
@@ -81,23 +67,29 @@ export default function EasySajuInputCard({ onSubmit, loading }: any) {
           </button>
         </div>
 
-        {/* 이름 */}
+        {/* 이름 → 한글 키보드 */}
         <input
           className="w-full border rounded-md px-4 py-3 text-base"
           placeholder="이름 (예: 홍길동)"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          lang="ko"
+          inputMode="text"
+          autoCapitalize="off"
         />
 
-        {/* 생년월일 */}
+        {/* 생년월일 → 숫자 키패드 */}
         <input
           className="w-full border rounded-md px-4 py-3 text-base"
           placeholder="생년월일 (예: 19780324)"
           value={birthdate}
           onChange={(e) => setBirthdate(e.target.value)}
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={8}
         />
 
-        {/* 체크박스 그룹 */}
+        {/* 체크박스 */}
         <div className="flex items-center gap-4 text-sm text-gray-600">
           <label className="flex items-center gap-1">
             <input
@@ -118,7 +110,7 @@ export default function EasySajuInputCard({ onSubmit, loading }: any) {
           </label>
         </div>
 
-        {/* 출생시간 */}
+        {/* 출생시간 → 숫자 키패드 */}
         <div className="flex items-center gap-3">
           <input
             className="flex-1 border rounded-md px-4 py-3 text-base"
@@ -126,6 +118,9 @@ export default function EasySajuInputCard({ onSubmit, loading }: any) {
             disabled={unknownTime}
             value={birthtime}
             onChange={(e) => setBirthtime(e.target.value)}
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={4}
           />
 
           <label className="flex items-center gap-1 text-sm text-gray-600">
@@ -138,15 +133,14 @@ export default function EasySajuInputCard({ onSubmit, loading }: any) {
           </label>
         </div>
 
-        {/* 조회 버튼 */}
         <button
-          type="submit"
           className="w-full bg-[#7c80f5] text-white font-bold py-3 rounded-lg text-lg shadow active:scale-[0.98]"
+          onClick={handleSubmit}
           disabled={loading}
         >
           {loading ? "계산 중..." : "만세력 계산하기"}
         </button>
-      </form>
+      </div>
     </div>
   );
 }
